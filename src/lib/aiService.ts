@@ -3,9 +3,14 @@
  * يرسل طلب إلى خدمة الذكاء الاصطناعي ويعيد الاستجابة
  * @param prompt - طلب المستخدم
  * @param model - نوع النموذج المستخدم
- * @returns وعد يحتوي على استجابة الذكاء الاصطناعي
+ * @param conversationId - معرف المحادثة للاحتفاظ بالسياق
+ * @returns وعد يحتوي على استجابة الذكاء الاصطناعي ومعرف المحادثة
  */
-export async function fetchAIResponse(prompt: string, model: string = "gpt-4"): Promise<string> {
+export async function fetchAIResponse(
+  prompt: string, 
+  model: string = "gpt-4", 
+  conversationId?: string
+): Promise<{ response: string; conversationId: string }> {
   try {
     const response = await fetch('https://bn0mar-ai.onrender.com/ask', {
       method: 'POST',
@@ -15,7 +20,8 @@ export async function fetchAIResponse(prompt: string, model: string = "gpt-4"): 
       },
       body: JSON.stringify({ 
         text: prompt,
-        model: model
+        model: model,
+        conversation_id: conversationId
       }),
     });
 
@@ -28,15 +34,27 @@ export async function fetchAIResponse(prompt: string, model: string = "gpt-4"): 
     
     // التحقق من صيغة الاستجابة
     if (data && typeof data.response === 'string') {
-      return data.response;
+      return {
+        response: data.response,
+        conversationId: data.conversation_id
+      };
     } else if (data && typeof data === 'string') {
-      return data;
+      return {
+        response: data,
+        conversationId: conversationId || 'new'
+      };
     } else if (data && data.response) {
       // محاولة تحويل الاستجابة إلى نص
-      return String(data.response);
+      return {
+        response: String(data.response),
+        conversationId: data.conversation_id
+      };
     } else {
       console.error('Unexpected response format:', data);
-      return 'حدث خطأ في معالجة الاستجابة من النموذج';
+      return {
+        response: 'حدث خطأ في معالجة الاستجابة من النموذج',
+        conversationId: conversationId || 'new'
+      };
     }
   } catch (error) {
     console.error('Error in fetchAIResponse:', error);
