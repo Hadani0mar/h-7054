@@ -27,7 +27,7 @@ const AIResponse = ({ response }: AIResponseProps) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-5 border border-gray-700 shadow-xl"
+      className="bg-gradient-to-br from-gray-900 to-black rounded-lg p-5 border border-gray-700 shadow-xl"
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center">
@@ -50,7 +50,7 @@ const AIResponse = ({ response }: AIResponseProps) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.5 }}
-        className="whitespace-pre-wrap bg-gray-800 p-4 rounded-md border border-gray-700 text-white" 
+        className="whitespace-pre-wrap bg-gray-900 p-4 rounded-md border border-gray-800 text-white shadow-inner" 
         dir="rtl"
       >
         {response}
