@@ -34,7 +34,7 @@ const Index = () => {
       console.error('Error fetching AI response:', error);
       toast({
         title: "خطأ في الاتصال",
-        description: "حدث خطأ أثناء الاتصال بالخادم. الرجاء المحاولة مرة أخرى.",
+        description: "حدث خطأ أثناء الاتصال بالخادم. الرجاء التحقق من تنسيق الطلب أو المحاولة مرة أخرى لاحقًا.",
         variant: "destructive",
       });
     } finally {

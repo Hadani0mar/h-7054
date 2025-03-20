@@ -12,7 +12,7 @@ export async function fetchAIResponse(prompt: string): Promise<string> {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ text: prompt }), // تغيير من "prompt" إلى "text" ليتوافق مع API
     });
 
     if (!response.ok) {
