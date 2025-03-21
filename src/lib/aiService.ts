@@ -9,11 +9,6 @@ interface AIResponseData {
   error?: string;
 }
 
-interface ModelData {
-  models: string[];
-  providers: string[];
-}
-
 interface AIRequestOptions {
   sessionId?: string;
   model?: string;
@@ -52,31 +47,6 @@ export async function fetchAIResponse(prompt: string, options: AIRequestOptions 
     return data as AIResponseData;
   } catch (error) {
     console.error('Error in fetchAIResponse:', error);
-    throw error;
-  }
-}
-
-/**
- * يجلب قائمة بالنماذج المتاحة في خدمة الذكاء الاصطناعي
- * @returns وعد يحتوي على قائمة النماذج المتاحة
- */
-export async function fetchAvailableModels(): Promise<ModelData> {
-  try {
-    const response = await fetch('https://bn0mar-ai.onrender.com/models', {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server responded with status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data as ModelData;
-  } catch (error) {
-    console.error('Error in fetchAvailableModels:', error);
     throw error;
   }
 }
