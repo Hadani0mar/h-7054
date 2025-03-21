@@ -1,9 +1,0 @@
-
-# Core dependencies
-flask==2.0.1
-flask-cors==3.0.10
-# Use a more lightweight WSGI server that works well on Termux
-gunicorn==20.1.0
-# Minimal AI dependencies
-g4f==0.1.2.0
-# Avoid heavy dependencies that may cause issues on Termux
