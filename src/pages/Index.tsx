@@ -159,7 +159,7 @@ const Index = () => {
             variants={itemVariants}
             className="text-4xl md:text-5xl font-bold mb-3 ai-gradient-text"
           >
-            نظام الذكاء الاصطناعي بايثون
+            Bn0mar-ai
           </motion.h1>
           
           <motion.p 
@@ -335,7 +335,7 @@ const Index = () => {
           variants={itemVariants}
           className="mt-10 text-center text-slate-500 dark:text-slate-500 text-sm"
         >
-          <p className="mb-2">تم تطويره باستخدام Python و React</p>
+          <p className="mb-2">Bn0mar</p>
         </motion.footer>
       </motion.div>
     </div>
