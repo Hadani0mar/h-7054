@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, Sparkles, Brain, Trash2 } from 'lucide-react';
+import { Loader2, Send, Sparkles, Brain, Trash2, CornerDownLeft, ArrowUpRight, Command } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AIResponse from '@/components/AIResponse';
 import { fetchAIResponse } from '@/lib/aiService';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Index = () => {
   const [prompt, setPrompt] = useState('');
@@ -80,212 +82,245 @@ const Index = () => {
     "اشرح كيفية استخدام مكتبة pandas في بايثون"
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        when: "beforeChildren",
+        staggerChildren: 0.1,
+        duration: 0.6
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1 }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white">
       <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="max-w-4xl mx-auto"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="max-w-4xl mx-auto px-4 py-8 md:py-12"
       >
-        <header className="mb-8 text-center">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex justify-center mb-3">
-              <div className="relative">
-                <Brain className="h-16 w-16 text-green-400" />
-                <motion.div
-                  className="absolute top-0 left-0 right-0 bottom-0"
-                  animate={{ 
-                    scale: [1, 1.1, 1],
-                    opacity: [0.7, 1, 0.7],
-                  }}
-                  transition={{ 
-                    repeat: Infinity,
-                    duration: 2,
-                  }}
-                >
-                  <Sparkles className="h-16 w-16 text-green-500 opacity-50" />
-                </motion.div>
-              </div>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
-              نظام الذكاء الاصطناعي بايثون
-            </h1>
-          </motion.div>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-lg text-gray-300"
-          >
-            أرسل طلبك وسأقوم بمعالجته والإجابة عليه
-          </motion.p>
-        </header>
-        
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="bg-gray-800 rounded-lg shadow-2xl p-6 border border-gray-700"
+        <motion.header 
+          variants={itemVariants} 
+          className="mb-8 text-center"
         >
-          <form onSubmit={handleSubmit} className="mb-6">
-            <div className="mb-4 relative">
-              <Textarea
-                placeholder="اكتب سؤالك أو طلبك هنا..."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className={`min-h-[120px] bg-gray-700 border border-gray-600 focus:border-green-500 text-white placeholder:text-gray-400 shadow-inner transition-all duration-200 ${isTyping ? 'border-green-500' : ''}`}
-                dir="rtl"
-              />
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: isTyping ? 1 : 0 }}
-                className="absolute bottom-2 left-2 text-green-500 text-xs"
+          <div className="flex justify-center mb-4">
+            <div className="relative inline-block">
+              <div className="bg-gradient-to-r from-green-600/30 to-blue-600/30 p-4 rounded-full">
+                <Brain className="h-16 w-16 text-green-400" />
+              </div>
+              <motion.div
+                className="absolute inset-0 flex items-center justify-center"
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{ 
+                  repeat: Infinity,
+                  duration: 3,
+                }}
               >
-                جاري الكتابة...
+                <Sparkles className="h-24 w-24 text-blue-500/30" />
               </motion.div>
             </div>
-            
-            {history.length > 0 && (
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm text-gray-400">الطلبات السابقة:</p>
-                <Button 
-                  type="button"
-                  variant="ghost" 
-                  size="sm"
-                  className="text-red-400 hover:text-red-300 p-1"
-                  onClick={clearHistory}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  مسح التاريخ
-                </Button>
-              </div>
-            )}
-            
-            {history.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {history.slice(-3).map((item, index) => (
-                  <motion.div 
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Button 
-                      type="button"
-                      variant="secondary" 
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => handleSuggestionClick(item)}
-                    >
-                      {item.length > 25 ? item.substring(0, 25) + '...' : item}
-                    </Button>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-            
-            <div className="mb-6">
-              <p className="text-sm text-gray-400 mb-2">اقتراحات للبدء:</p>
-              <div className="flex flex-wrap gap-2">
-                {suggestions.map((suggestion, index) => (
-                  <motion.div 
-                    key={index}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 * index, duration: 0.3 }}
-                    whileHover={{ scale: 1.05 }}
-                    className="flex-grow"
-                  >
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      className="text-xs w-full text-gray-300 border-gray-600 hover:bg-gray-700"
-                      onClick={() => handleSuggestionClick(suggestion)}
-                    >
-                      {suggestion}
-                    </Button>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-            
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white font-bold py-3"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    جاري المعالجة...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-5 w-5 mr-2" />
-                    إرسال الطلب
-                  </>
-                )}
-              </Button>
-            </motion.div>
-          </form>
+          </div>
           
-          {response && <AIResponse response={response} />}
+          <motion.h1 
+            variants={itemVariants}
+            className="text-4xl md:text-5xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-blue-500 to-purple-600"
+          >
+            نظام الذكاء الاصطناعي بايثون
+          </motion.h1>
+          
+          <motion.p 
+            variants={itemVariants}
+            className="text-lg text-gray-300 max-w-xl mx-auto"
+          >
+            أرسل طلبك وسأقوم بمعالجته والإجابة عليه بدقة وكفاءة عالية
+          </motion.p>
+        </motion.header>
+        
+        <motion.div 
+          variants={itemVariants}
+          className="mb-8"
+        >
+          <Card className="bg-gray-800/50 border border-gray-700 backdrop-blur-sm shadow-xl">
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="relative">
+                  <Textarea
+                    placeholder="اكتب سؤالك أو طلبك هنا..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="min-h-[120px] bg-gray-700/70 border border-gray-600 focus:border-green-500 text-white placeholder:text-gray-400 resize-none shadow-inner transition-all duration-200 text-lg"
+                    dir="rtl"
+                  />
+                  
+                  <div className="absolute bottom-3 left-3 flex items-center gap-2 text-gray-500">
+                    {isTyping ? (
+                      <motion.span 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-green-500 text-xs flex items-center"
+                      >
+                        <Command className="h-3 w-3 mr-1" />
+                        جاري الكتابة...
+                      </motion.span>
+                    ) : (
+                      <span className="text-xs flex items-center">
+                        <CornerDownLeft className="h-3 w-3 mr-1" />
+                        اضغط Enter للإرسال
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full sm:w-auto order-2 sm:order-1"
+                  >
+                    <Button 
+                      type="submit" 
+                      className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          جاري المعالجة...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-5 w-5 mr-2" />
+                          إرسال الطلب
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+                  
+                  {history.length > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-gray-400 order-1 sm:order-2">
+                      <span>لديك {history.length} طلب سابق</span>
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                        onClick={clearHistory}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        مسح التاريخ
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </form>
+              
+              {history.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium text-gray-400 mb-3">الطلبات السابقة:</h3>
+                  <ScrollArea className="h-20">
+                    <div className="flex flex-wrap gap-2">
+                      {history.slice(-5).map((item, index) => (
+                        <motion.div 
+                          key={index}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            size="sm"
+                            className="text-xs bg-gray-700/50 border-gray-600 hover:bg-gray-600 text-gray-300"
+                            onClick={() => handleSuggestionClick(item)}
+                          >
+                            <span className="truncate max-w-[200px]">
+                              {item}
+                            </span>
+                            <ArrowUpRight className="h-3 w-3 ml-1 text-gray-500" />
+                          </Button>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+              
+              <div className="mt-6">
+                <h3 className="text-sm font-medium text-gray-400 mb-3">اقتراحات للبدء:</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {suggestions.map((suggestion, index) => (
+                    <motion.div 
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 * index, duration: 0.3 }}
+                      whileHover={{ scale: 1.02 }}
+                      className="w-full"
+                    >
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        className="w-full h-auto py-3 text-xs text-gray-300 border-gray-600 bg-gray-800/30 hover:bg-gray-700/50 justify-start"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                      >
+                        <Command className="h-3 w-3 mr-2 text-green-500" />
+                        <span className="truncate">{suggestion}</span>
+                      </Button>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
         
+        {response && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <AIResponse response={response} />
+          </motion.div>
+        )}
+        
         <motion.footer 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.5 }}
-          className="mt-8 text-center text-gray-500 text-sm"
+          variants={itemVariants}
+          className="mt-10 text-center text-gray-500 text-sm"
         >
-          <p>تم تطويره باستخدام Python و React</p>
-          <div className="flex justify-center items-center mt-2 space-x-2 rtl:space-x-reverse">
-            <motion.div
-              animate={{ 
-                y: [0, -3, 0],
-              }}
-              transition={{ 
-                repeat: Infinity,
-                duration: 1.5,
-                delay: 0.2
-              }}
-            >
-              <span className="text-green-500 text-2xl">•</span>
-            </motion.div>
-            <motion.div
-              animate={{ 
-                y: [0, -3, 0],
-              }}
-              transition={{ 
-                repeat: Infinity,
-                duration: 1.5,
-                delay: 0.4
-              }}
-            >
-              <span className="text-blue-500 text-2xl">•</span>
-            </motion.div>
-            <motion.div
-              animate={{ 
-                y: [0, -3, 0],
-              }}
-              transition={{ 
-                repeat: Infinity,
-                duration: 1.5,
-                delay: 0.6
-              }}
-            >
-              <span className="text-purple-500 text-2xl">•</span>
-            </motion.div>
+          <p className="mb-2">تم تطويره باستخدام Python و React</p>
+          <div className="flex justify-center items-center space-x-3 rtl:space-x-reverse">
+            {[
+              { color: "green", delay: 0.2 },
+              { color: "blue", delay: 0.4 },
+              { color: "purple", delay: 0.6 }
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                animate={{ 
+                  y: [0, -5, 0],
+                }}
+                transition={{ 
+                  repeat: Infinity,
+                  duration: 1.5,
+                  delay: item.delay
+                }}
+              >
+                <span className={`text-${item.color}-500 text-lg`}>•</span>
+              </motion.div>
+            ))}
           </div>
         </motion.footer>
       </motion.div>

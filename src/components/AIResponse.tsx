@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Copy, Check } from 'lucide-react';
+import { Bot, Copy, Check, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface AIResponseProps {
   response: string;
@@ -27,34 +28,51 @@ const AIResponse = ({ response }: AIResponseProps) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-5 border border-gray-700 shadow-xl"
+      className="w-full"
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center">
-          <div className="bg-green-600 p-2 rounded-full mr-3">
-            <Bot className="h-5 w-5 text-white" />
+      <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="bg-green-600/20 p-2 rounded-full">
+                <Bot className="h-5 w-5 text-green-400" />
+              </div>
+              <motion.div
+                className="absolute inset-0 flex items-center justify-center"
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  opacity: [0.7, 0.3, 0.7],
+                }}
+                transition={{ 
+                  repeat: Infinity,
+                  duration: 3,
+                }}
+              >
+                <Sparkles className="h-8 w-8 text-green-500/30" />
+              </motion.div>
+            </div>
+            <h3 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">استجابة النظام</h3>
           </div>
-          <h3 className="text-xl font-semibold text-green-400">استجابة النظام</h3>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-gray-400 hover:text-white hover:bg-gray-700"
+            onClick={handleCopy}
+          >
+            {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            <span className="mr-2 text-xs">{isCopied ? 'تم النسخ' : 'نسخ'}</span>
+          </Button>
         </div>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="text-gray-400 hover:text-white"
-          onClick={handleCopy}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="whitespace-pre-wrap bg-gray-800/50 p-5 rounded-md text-white max-h-[60vh] overflow-y-auto" 
+          dir="rtl"
         >
-          {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          <span className="mr-2 text-xs">{isCopied ? 'تم النسخ' : 'نسخ'}</span>
-        </Button>
-      </div>
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-        className="whitespace-pre-wrap bg-gray-800 p-4 rounded-md border border-gray-700 text-white" 
-        dir="rtl"
-      >
-        {response}
-      </motion.div>
+          {response}
+        </motion.div>
+      </Card>
     </motion.div>
   );
 };
