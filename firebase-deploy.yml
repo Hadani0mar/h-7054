@@ -1,0 +1,30 @@
+name: Deploy to Firebase Hosting on push
+
+on:
+  push:
+    branches:
+      - main  # يمكنك تغيير هذا إلى الفرع الذي تريد مراقبته
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build  # تأكد من أن لديك أمر بناء في package.json
+
+      - name: Deploy to Firebase Hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: firebase deploy --only hosting
