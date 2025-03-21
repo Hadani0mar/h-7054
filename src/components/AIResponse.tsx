@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Copy, Check, Sparkles, Code } from 'lucide-react';
+import { Bot, Copy, Check, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -67,33 +67,18 @@ const AIResponse = ({ response, processedResponse }: AIResponseProps) => {
       transition={{ duration: 0.5 }}
       className="w-full"
     >
-      <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <Card className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="bg-green-600/20 p-2 rounded-full">
-                <Bot className="h-5 w-5 text-green-400" />
-              </div>
-              <motion.div
-                className="absolute inset-0 flex items-center justify-center"
-                animate={{ 
-                  scale: [1, 1.2, 1],
-                  opacity: [0.7, 0.3, 0.7],
-                }}
-                transition={{ 
-                  repeat: Infinity,
-                  duration: 3,
-                }}
-              >
-                <Sparkles className="h-8 w-8 text-green-500/30" />
-              </motion.div>
+            <div className="bg-slate-100 dark:bg-slate-700 p-2 rounded-full">
+              <Bot className="h-5 w-5 text-slate-700 dark:text-slate-300" />
             </div>
-            <h3 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">استجابة النظام</h3>
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">استجابة النظام</h3>
           </div>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-gray-400 hover:text-white hover:bg-gray-700"
+            className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => handleCopy(response)}
           >
             {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -103,12 +88,12 @@ const AIResponse = ({ response, processedResponse }: AIResponseProps) => {
         
         {codeBlocks.length > 0 ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="px-4 pt-2 border-b border-gray-700">
-              <TabsList className="bg-gray-700/30">
-                <TabsTrigger value="response" className="data-[state=active]:bg-green-500/20">
+            <div className="px-4 pt-2 border-b border-slate-200 dark:border-slate-700">
+              <TabsList className="bg-slate-100 dark:bg-slate-700">
+                <TabsTrigger value="response" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600">
                   النص
                 </TabsTrigger>
-                <TabsTrigger value="code" className="data-[state=active]:bg-blue-500/20">
+                <TabsTrigger value="code" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600">
                   <Code className="h-4 w-4 mr-1" />
                   الأكواد ({codeBlocks.length})
                 </TabsTrigger>
@@ -120,7 +105,7 @@ const AIResponse = ({ response, processedResponse }: AIResponseProps) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
-                className="whitespace-pre-wrap bg-gray-800/50 p-5 rounded-md text-white max-h-[60vh] overflow-y-auto" 
+                className="whitespace-pre-wrap bg-white dark:bg-slate-800 p-5 rounded-md text-slate-800 dark:text-slate-200 max-h-[60vh] overflow-y-auto" 
                 dir="rtl"
               >
                 {processedResponse?.text || response}
@@ -128,26 +113,26 @@ const AIResponse = ({ response, processedResponse }: AIResponseProps) => {
             </TabsContent>
             
             <TabsContent value="code" className="m-0">
-              <div className="bg-gray-800/50 p-5 max-h-[60vh] overflow-y-auto">
+              <div className="bg-white dark:bg-slate-800 p-5 max-h-[60vh] overflow-y-auto">
                 {codeBlocks.map((block, index) => (
                   <div key={index} className="mb-4 last:mb-0">
                     <div className="flex justify-between items-center mb-2">
                       {block.language && (
-                        <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
                           {block.language}
                         </span>
                       )}
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-xs text-gray-400 hover:text-white hover:bg-gray-700"
+                        className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
                         onClick={() => handleCopy(block.code)}
                       >
                         <Copy className="h-3 w-3 mr-1" />
                         نسخ
                       </Button>
                     </div>
-                    <pre className="bg-gray-900/70 p-4 rounded text-gray-100 overflow-x-auto text-sm">
+                    <pre className="bg-slate-100 dark:bg-slate-900 p-4 rounded text-slate-800 dark:text-slate-200 overflow-x-auto text-sm">
                       <code>{block.code}</code>
                     </pre>
                   </div>
@@ -160,7 +145,7 @@ const AIResponse = ({ response, processedResponse }: AIResponseProps) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="whitespace-pre-wrap bg-gray-800/50 p-5 rounded-md text-white max-h-[60vh] overflow-y-auto" 
+            className="whitespace-pre-wrap bg-white dark:bg-slate-800 p-5 rounded-md text-slate-800 dark:text-slate-200 max-h-[60vh] overflow-y-auto" 
             dir="rtl"
           >
             {response}

@@ -6,19 +6,18 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, 
   Send, 
-  Sparkles, 
-  Brain, 
+  Bot, 
   Trash2, 
   CornerDownLeft, 
   ArrowUpRight, 
   Command,
-  Database
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AIResponse from '@/components/AIResponse';
 import { fetchAIResponse } from '@/lib/aiService';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Index = () => {
   const [prompt, setPrompt] = useState('');
@@ -133,12 +132,16 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      
       <motion.div 
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="max-w-4xl mx-auto px-4 py-8 md:py-12"
+        className="ai-container py-8 md:py-12"
       >
         <motion.header 
           variants={itemVariants} 
@@ -146,35 +149,22 @@ const Index = () => {
         >
           <div className="flex justify-center mb-4">
             <div className="relative inline-block">
-              <div className="bg-gradient-to-r from-green-600/30 to-blue-600/30 p-4 rounded-full">
-                <Brain className="h-16 w-16 text-green-400" />
+              <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full">
+                <Bot className="h-12 w-12 text-slate-700 dark:text-slate-300" />
               </div>
-              <motion.div
-                className="absolute inset-0 flex items-center justify-center"
-                animate={{ 
-                  scale: [1, 1.1, 1],
-                  opacity: [0.5, 1, 0.5],
-                }}
-                transition={{ 
-                  repeat: Infinity,
-                  duration: 3,
-                }}
-              >
-                <Sparkles className="h-24 w-24 text-blue-500/30" />
-              </motion.div>
             </div>
           </div>
           
           <motion.h1 
             variants={itemVariants}
-            className="text-4xl md:text-5xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-blue-500 to-purple-600"
+            className="text-4xl md:text-5xl font-bold mb-3 ai-gradient-text"
           >
             نظام الذكاء الاصطناعي بايثون
           </motion.h1>
           
           <motion.p 
             variants={itemVariants}
-            className="text-lg text-gray-300 max-w-xl mx-auto"
+            className="text-lg text-slate-600 dark:text-slate-400 max-w-xl mx-auto"
           >
             أرسل طلبك وسأقوم بمعالجته والإجابة عليه بدقة وكفاءة عالية
           </motion.p>
@@ -184,8 +174,8 @@ const Index = () => {
               variants={itemVariants}
               className="mt-2"
             >
-              <span className="text-xs bg-gray-800 px-3 py-1 rounded-full border border-gray-700 text-green-400 inline-flex items-center">
-                <Database className="h-3 w-3 mr-1" />
+              <span className="text-xs bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 inline-flex items-center">
+                <Command className="h-3 w-3 mr-1" />
                 محادثة مستمرة
               </span>
             </motion.div>
@@ -196,7 +186,7 @@ const Index = () => {
           variants={itemVariants}
           className="mb-8"
         >
-          <Card className="bg-gray-800/50 border border-gray-700 backdrop-blur-sm shadow-xl">
+          <Card className="ai-subtle-card">
             <CardContent className="p-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="relative">
@@ -204,16 +194,16 @@ const Index = () => {
                     placeholder="اكتب سؤالك أو طلبك هنا..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="min-h-[120px] bg-gray-700/70 border border-gray-600 focus:border-green-500 text-white placeholder:text-gray-400 resize-none shadow-inner transition-all duration-200 text-lg"
+                    className="min-h-[120px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-slate-400 dark:focus:border-slate-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 resize-none shadow-inner transition-all duration-200 text-lg"
                     dir="rtl"
                   />
                   
-                  <div className="absolute bottom-3 left-3 flex items-center gap-2 text-gray-500">
+                  <div className="absolute bottom-3 left-3 flex items-center gap-2 text-slate-500 dark:text-slate-400">
                     {isTyping ? (
                       <motion.span 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="text-green-500 text-xs flex items-center"
+                        className="text-slate-500 dark:text-slate-400 text-xs flex items-center"
                       >
                         <Command className="h-3 w-3 mr-1" />
                         جاري الكتابة...
@@ -235,7 +225,7 @@ const Index = () => {
                   >
                     <Button 
                       type="submit" 
-                      className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg"
+                      className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg shadow-sm"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -253,13 +243,13 @@ const Index = () => {
                   </motion.div>
                   
                   {history.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-gray-400 order-1 sm:order-2">
+                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 order-1 sm:order-2">
                       <span>لديك {history.length} طلب سابق</span>
                       <Button 
                         type="button"
                         variant="ghost" 
                         size="sm"
-                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                        className="text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
                         onClick={clearHistory}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
@@ -272,7 +262,7 @@ const Index = () => {
               
               {history.length > 0 && (
                 <div className="mt-6">
-                  <h3 className="text-sm font-medium text-gray-400 mb-3">الطلبات السابقة:</h3>
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">الطلبات السابقة:</h3>
                   <ScrollArea className="h-20">
                     <div className="flex flex-wrap gap-2">
                       {history.slice(-5).map((item, index) => (
@@ -287,13 +277,13 @@ const Index = () => {
                             type="button"
                             variant="outline" 
                             size="sm"
-                            className="text-xs bg-gray-700/50 border-gray-600 hover:bg-gray-600 text-gray-300"
+                            className="text-xs bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
                             onClick={() => handleSuggestionClick(item)}
                           >
                             <span className="truncate max-w-[200px]">
                               {item}
                             </span>
-                            <ArrowUpRight className="h-3 w-3 ml-1 text-gray-500" />
+                            <ArrowUpRight className="h-3 w-3 ml-1 text-slate-500 dark:text-slate-400" />
                           </Button>
                         </motion.div>
                       ))}
@@ -303,7 +293,7 @@ const Index = () => {
               )}
               
               <div className="mt-6">
-                <h3 className="text-sm font-medium text-gray-400 mb-3">اقتراحات للبدء:</h3>
+                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">اقتراحات للبدء:</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {suggestions.map((suggestion, index) => (
                     <motion.div 
@@ -317,10 +307,10 @@ const Index = () => {
                       <Button 
                         type="button"
                         variant="outline" 
-                        className="w-full h-auto py-3 text-xs text-gray-300 border-gray-600 bg-gray-800/30 hover:bg-gray-700/50 justify-start"
+                        className="w-full h-auto py-3 text-xs text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 bg-slate-100/50 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700 justify-start"
                         onClick={() => handleSuggestionClick(suggestion)}
                       >
-                        <Command className="h-3 w-3 mr-2 text-green-500" />
+                        <Command className="h-3 w-3 mr-2" />
                         <span className="truncate">{suggestion}</span>
                       </Button>
                     </motion.div>
@@ -343,30 +333,9 @@ const Index = () => {
         
         <motion.footer 
           variants={itemVariants}
-          className="mt-10 text-center text-gray-500 text-sm"
+          className="mt-10 text-center text-slate-500 dark:text-slate-500 text-sm"
         >
           <p className="mb-2">تم تطويره باستخدام Python و React</p>
-          <div className="flex justify-center items-center space-x-3 rtl:space-x-reverse">
-            {[
-              { color: "green", delay: 0.2 },
-              { color: "blue", delay: 0.4 },
-              { color: "purple", delay: 0.6 }
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                animate={{ 
-                  y: [0, -5, 0],
-                }}
-                transition={{ 
-                  repeat: Infinity,
-                  duration: 1.5,
-                  delay: item.delay
-                }}
-              >
-                <span className={`text-${item.color}-500 text-lg`}>•</span>
-              </motion.div>
-            ))}
-          </div>
         </motion.footer>
       </motion.div>
     </div>
