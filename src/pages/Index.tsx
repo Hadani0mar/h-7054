@@ -3,44 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Loader2, 
-  Send, 
-  Sparkles, 
-  Brain, 
-  Trash2, 
-  CornerDownLeft, 
-  ArrowUpRight, 
-  Command,
-  Database,
-  Cpu
-} from 'lucide-react';
+import { Loader2, Send, Sparkles, Brain, Trash2, CornerDownLeft, ArrowUpRight, Command } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AIResponse from '@/components/AIResponse';
-import { fetchAIResponse, fetchAvailableModels } from '@/lib/aiService';
+import { fetchAIResponse } from '@/lib/aiService';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Select, 
-  SelectContent, 
-  SelectGroup, 
-  SelectItem, 
-  SelectLabel, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
 
 const Index = () => {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
-  const [processedResponse, setProcessedResponse] = useState<{text: string, code_blocks: string[]} | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [history, setHistory] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [models, setModels] = useState<string[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>('gpt-3.5-turbo');
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,35 +24,7 @@ const Index = () => {
     if (savedHistory) {
       setHistory(JSON.parse(savedHistory));
     }
-    
-    // استرجاع معرف الجلسة من التخزين المحلي
-    const savedSessionId = localStorage.getItem('sessionId');
-    if (savedSessionId) {
-      setSessionId(savedSessionId);
-    }
-    
-    // جلب النماذج المتاحة
-    fetchModels();
   }, []);
-  
-  const fetchModels = async () => {
-    setIsLoadingModels(true);
-    try {
-      const modelData = await fetchAvailableModels();
-      if (modelData && modelData.models) {
-        setModels(modelData.models);
-      }
-    } catch (error) {
-      console.error('Error fetching models:', error);
-      toast({
-        title: "خطأ في جلب النماذج",
-        description: "حدث خطأ أثناء محاولة جلب النماذج المتاحة",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingModels(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +40,6 @@ const Index = () => {
     
     setIsLoading(true);
     setResponse('');
-    setProcessedResponse(undefined);
     
     try {
       // إضافة الطلب إلى التاريخ
@@ -101,23 +47,8 @@ const Index = () => {
       setHistory(newHistory);
       localStorage.setItem('promptHistory', JSON.stringify(newHistory));
       
-      const options = {
-        sessionId,
-        model: selectedModel
-      };
-      
-      const result = await fetchAIResponse(prompt, options);
-      
-      if (result.session_id) {
-        setSessionId(result.session_id);
-        localStorage.setItem('sessionId', result.session_id);
-      }
-      
-      if (result.processed) {
-        setProcessedResponse(result.processed);
-      }
-      
-      setResponse(result.response);
+      const result = await fetchAIResponse(prompt);
+      setResponse(result);
     } catch (error) {
       console.error('Error fetching AI response:', error);
       toast({
@@ -214,18 +145,6 @@ const Index = () => {
           >
             أرسل طلبك وسأقوم بمعالجته والإجابة عليه بدقة وكفاءة عالية
           </motion.p>
-          
-          {sessionId && (
-            <motion.div
-              variants={itemVariants}
-              className="mt-2"
-            >
-              <span className="text-xs bg-gray-800 px-3 py-1 rounded-full border border-gray-700 text-green-400 inline-flex items-center">
-                <Database className="h-3 w-3 mr-1" />
-                محادثة مستمرة
-              </span>
-            </motion.div>
-          )}
         </motion.header>
         
         <motion.div 
@@ -235,67 +154,6 @@ const Index = () => {
           <Card className="bg-gray-800/50 border border-gray-700 backdrop-blur-sm shadow-xl">
             <CardContent className="p-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center mb-4">
-                  <div className="col-span-1 md:col-span-3">
-                    <label htmlFor="model-select" className="text-sm text-gray-400 mb-1 block">النموذج:</label>
-                    <Select
-                      value={selectedModel}
-                      onValueChange={setSelectedModel}
-                      disabled={isLoadingModels}
-                    >
-                      <SelectTrigger className="bg-gray-700/70 border-gray-600 focus:border-green-500 text-white">
-                        <SelectValue placeholder="اختر نموذجًا" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700">
-                        <SelectGroup>
-                          <SelectLabel className="text-gray-400">النماذج المتاحة</SelectLabel>
-                          {isLoadingModels ? (
-                            <div className="flex items-center justify-center py-2">
-                              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                              <span className="mr-2 text-gray-400 text-sm">جاري تحميل النماذج...</span>
-                            </div>
-                          ) : models.length > 0 ? (
-                            models.map((model) => (
-                              <SelectItem key={model} value={model} className="text-white hover:bg-gray-700">
-                                <div className="flex items-center">
-                                  <Cpu className="h-3 w-3 mr-2 text-green-500" />
-                                  {model}
-                                </div>
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="gpt-3.5-turbo" className="text-white">
-                              <div className="flex items-center">
-                                <Cpu className="h-3 w-3 mr-2 text-green-500" />
-                                gpt-3.5-turbo (الافتراضي)
-                              </div>
-                            </SelectItem>
-                          )}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="col-span-1">
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      className="w-full border-gray-600 text-gray-300 hover:text-green-400 hover:border-green-500"
-                      onClick={fetchModels}
-                      disabled={isLoadingModels}
-                    >
-                      {isLoadingModels ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <ArrowUpRight className="h-4 w-4 mr-1" />
-                          <span>تحديث النماذج</span>
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-                
                 <div className="relative">
                   <Textarea
                     placeholder="اكتب سؤالك أو طلبك هنا..."
@@ -434,7 +292,7 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <AIResponse response={response} processedResponse={processedResponse} />
+            <AIResponse response={response} />
           </motion.div>
         )}
         
