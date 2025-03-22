@@ -1,39 +1,48 @@
 
 interface AIResponseData {
   response: string;
-  processed?: {
-    text: string;
-    code_blocks: string[];
-  };
-  session_id?: string;
   error?: string;
 }
 
 interface AIRequestOptions {
-  sessionId?: string;
-  model?: string;
+  userId?: string;
 }
 
 /**
  * يرسل طلب إلى خدمة الذكاء الاصطناعي ويعيد الاستجابة
  * @param prompt - طلب المستخدم
- * @param options - خيارات إضافية مثل معرف الجلسة والنموذج المختار
+ * @param options - خيارات إضافية
  * @returns وعد يحتوي على استجابة الذكاء الاصطناعي
  */
 export async function fetchAIResponse(prompt: string, options: AIRequestOptions = {}): Promise<AIResponseData> {
   try {
-    const { sessionId, model } = options;
+    // استخدام معرف المستخدم من localStorage أو إنشاء واحد جديد
+    let userId = options.userId || localStorage.getItem('bn0mar_user_id');
     
-    const response = await fetch('https://bn0mar-ai.onrender.com/ask', {
+    // إذا لم يكن هناك معرف مستخدم، قم بإنشاء واحد جديد
+    if (!userId) {
+      const response = await fetch('http://localhost:8000/create_user', {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`فشل إنشاء معرف المستخدم: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      userId = data.user_id;
+      localStorage.setItem('bn0mar_user_id', userId);
+    }
+    
+    // إرسال الطلب إلى API الخاص بك
+    const response = await fetch('http://localhost:8000/ask', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
       },
       body: JSON.stringify({ 
-        text: prompt,
-        session_id: sessionId,
-        model: model
+        user_id: userId,
+        text: prompt
       }),
     });
 
@@ -44,36 +53,49 @@ export async function fetchAIResponse(prompt: string, options: AIRequestOptions 
     // الحصول على البيانات كـ JSON
     const data = await response.json();
     
-    return data as AIResponseData;
+    return {
+      response: data.response
+    };
+    
   } catch (error) {
     console.error('Error in fetchAIResponse:', error);
-    throw error;
+    return {
+      response: "حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى.",
+      error: error instanceof Error ? error.message : "خطأ غير معروف"
+    };
   }
 }
 
 /**
- * يمسح محادثة سابقة باستخدام معرف الجلسة
- * @param sessionId - معرف الجلسة المراد مسحها
- * @returns وعد يحتوي على نتيجة العملية
+ * يجلب المحادثات السابقة للمستخدم
+ * @returns وعد يحتوي على المحادثات السابقة
  */
-export async function clearConversation(sessionId: string): Promise<{ status: string; message: string }> {
+export async function fetchConversationHistory(): Promise<{question: string; answer: string}[]> {
   try {
-    const response = await fetch('https://bn0mar-ai.onrender.com/clear-conversation', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ session_id: sessionId }),
-    });
-
+    const userId = localStorage.getItem('bn0mar_user_id');
+    
+    if (!userId) {
+      return [];
+    }
+    
+    const response = await fetch(`http://localhost:8000/conversations/${userId}`);
+    
     if (!response.ok) {
       throw new Error(`Server responded with status: ${response.status}`);
     }
-
-    return await response.json();
+    
+    const data = await response.json();
+    return data.conversations;
+    
   } catch (error) {
-    console.error('Error in clearConversation:', error);
-    throw error;
+    console.error('Error fetching conversation history:', error);
+    return [];
   }
+}
+
+/**
+ * يمسح معرف المستخدم من التخزين المحلي
+ */
+export function clearUserSession(): void {
+  localStorage.removeItem('bn0mar_user_id');
 }

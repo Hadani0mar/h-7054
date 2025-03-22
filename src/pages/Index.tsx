@@ -11,10 +11,11 @@ import {
   CornerDownLeft, 
   ArrowUpRight, 
   Command,
+  RefreshCw,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AIResponse from '@/components/AIResponse';
-import { fetchAIResponse } from '@/lib/aiService';
+import { fetchAIResponse, fetchConversationHistory, clearUserSession } from '@/lib/aiService';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -22,25 +23,27 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 const Index = () => {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
-  const [processedResponse, setProcessedResponse] = useState<{text: string, code_blocks: string[]} | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<{question: string; answer: string}[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isFetchingHistory, setIsFetchingHistory] = useState(false);
   const { toast } = useToast();
 
+  // جلب محادثات المستخدم السابقة عند تحميل الصفحة
   useEffect(() => {
-    // استرجاع التاريخ من التخزين المحلي
-    const savedHistory = localStorage.getItem('promptHistory');
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory));
-    }
+    const loadConversationHistory = async () => {
+      setIsFetchingHistory(true);
+      try {
+        const conversations = await fetchConversationHistory();
+        setHistory(conversations);
+      } catch (error) {
+        console.error('Failed to load conversation history:', error);
+      } finally {
+        setIsFetchingHistory(false);
+      }
+    };
     
-    // استرجاع معرف الجلسة من التخزين المحلي
-    const savedSessionId = localStorage.getItem('sessionId');
-    if (savedSessionId) {
-      setSessionId(savedSessionId);
-    }
+    loadConversationHistory();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,30 +60,28 @@ const Index = () => {
     
     setIsLoading(true);
     setResponse('');
-    setProcessedResponse(undefined);
     
     try {
-      // إضافة الطلب إلى التاريخ
-      const newHistory = [...history, prompt];
-      setHistory(newHistory);
-      localStorage.setItem('promptHistory', JSON.stringify(newHistory));
+      // حفظ السؤال الحالي لعرضه أثناء معالجة الطلب
+      const currentQuestion = prompt;
       
-      const options = {
-        sessionId
-      };
+      const result = await fetchAIResponse(prompt);
       
-      const result = await fetchAIResponse(prompt, options);
-      
-      if (result.session_id) {
-        setSessionId(result.session_id);
-        localStorage.setItem('sessionId', result.session_id);
-      }
-      
-      if (result.processed) {
-        setProcessedResponse(result.processed);
+      if (result.error) {
+        throw new Error(result.error);
       }
       
       setResponse(result.response);
+      
+      // تحديث التاريخ بعد الحصول على الرد
+      setHistory(prevHistory => [
+        { question: currentQuestion, answer: result.response },
+        ...prevHistory
+      ]);
+      
+      // مسح مربع النص بعد الإرسال
+      setPrompt('');
+      
     } catch (error) {
       console.error('Error fetching AI response:', error);
       toast({
@@ -99,19 +100,42 @@ const Index = () => {
     setTimeout(() => setIsTyping(false), 500);
   };
 
+  const refreshHistory = async () => {
+    setIsFetchingHistory(true);
+    try {
+      const conversations = await fetchConversationHistory();
+      setHistory(conversations);
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث سجل المحادثات بنجاح",
+      });
+    } catch (error) {
+      console.error('Failed to refresh conversation history:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل تحديث سجل المحادثات",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetchingHistory(false);
+    }
+  };
+
   const clearHistory = () => {
+    // مسح جلسة المستخدم من التخزين المحلي
+    clearUserSession();
     setHistory([]);
-    localStorage.removeItem('promptHistory');
+    setResponse('');
     toast({
       title: "تم مسح التاريخ",
-      description: "تم مسح جميع الطلبات السابقة بنجاح",
+      description: "تم مسح جميع المحادثات السابقة وإنشاء جلسة جديدة",
     });
   };
 
   const suggestions = [
-    "اكتب برنامج بايثون لحساب مجموع الأرقام من 1 إلى 100",
-    "كيف يمكنني إنشاء خوارزمية تصنيف الصور؟",
-    "اشرح كيفية استخدام مكتبة pandas في بايثون"
+    "شن يدير مصمم واجهات المستخدم؟",
+    "اكتبلي برنامج بايثون يحسب مجموع الأرقام من 1 إلى 100",
+    "علمني كيفية نكتب قصة قصيرة باللهجة الليبية"
   ];
 
   const containerVariants = {
@@ -166,17 +190,17 @@ const Index = () => {
             variants={itemVariants}
             className="text-lg text-slate-600 dark:text-slate-400 max-w-xl mx-auto"
           >
-            أرسل طلبك وسأقوم بمعالجته والإجابة عليه بدقة وكفاءة عالية
+            اسأل أي سؤال وسأجيبك باللهجة الليبية
           </motion.p>
           
-          {sessionId && (
+          {localStorage.getItem('bn0mar_user_id') && (
             <motion.div
               variants={itemVariants}
               className="mt-2"
             >
               <span className="text-xs bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 inline-flex items-center">
                 <Command className="h-3 w-3 mr-1" />
-                محادثة مستمرة
+                معرف المستخدم: {localStorage.getItem('bn0mar_user_id')?.substring(0, 8)}...
               </span>
             </motion.div>
           )}
@@ -242,30 +266,51 @@ const Index = () => {
                     </Button>
                   </motion.div>
                   
-                  {history.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 order-1 sm:order-2">
-                      <span>لديك {history.length} طلب سابق</span>
-                      <Button 
-                        type="button"
-                        variant="ghost" 
-                        size="sm"
-                        className="text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
-                        onClick={clearHistory}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        مسح التاريخ
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 order-1 sm:order-2">
+                    {isFetchingHistory ? (
+                      <span className="flex items-center">
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        جاري التحميل...
+                      </span>
+                    ) : (
+                      <>
+                        {history.length > 0 && (
+                          <>
+                            <span>لديك {history.length} محادثة سابقة</span>
+                            <Button 
+                              type="button"
+                              variant="ghost" 
+                              size="sm"
+                              className="text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              onClick={refreshHistory}
+                            >
+                              <RefreshCw className="h-4 w-4 mr-1" />
+                              تحديث
+                            </Button>
+                            <Button 
+                              type="button"
+                              variant="ghost" 
+                              size="sm"
+                              className="text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              onClick={clearHistory}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              مسح
+                            </Button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </form>
               
               {history.length > 0 && (
                 <div className="mt-6">
-                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">الطلبات السابقة:</h3>
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">المحادثات السابقة:</h3>
                   <ScrollArea className="h-20">
                     <div className="flex flex-wrap gap-2">
-                      {history.slice(-5).map((item, index) => (
+                      {history.slice(0, 5).map((item, index) => (
                         <motion.div 
                           key={index}
                           initial={{ opacity: 0, scale: 0.9 }}
@@ -278,10 +323,10 @@ const Index = () => {
                             variant="outline" 
                             size="sm"
                             className="text-xs bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
-                            onClick={() => handleSuggestionClick(item)}
+                            onClick={() => handleSuggestionClick(item.question)}
                           >
                             <span className="truncate max-w-[200px]">
-                              {item}
+                              {item.question}
                             </span>
                             <ArrowUpRight className="h-3 w-3 ml-1 text-slate-500 dark:text-slate-400" />
                           </Button>
@@ -327,7 +372,7 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <AIResponse response={response} processedResponse={processedResponse} />
+            <AIResponse response={response} />
           </motion.div>
         )}
         
@@ -335,7 +380,7 @@ const Index = () => {
           variants={itemVariants}
           className="mt-10 text-center text-slate-500 dark:text-slate-500 text-sm"
         >
-          <p className="mb-2">Bn0mar</p>
+          <p className="mb-2">M0usaBn0mar 2024</p>
         </motion.footer>
       </motion.div>
     </div>
