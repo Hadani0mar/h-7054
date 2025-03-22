@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Copy, Check } from 'lucide-react';
+import { Bot, Copy, Check, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
@@ -56,7 +56,10 @@ const AIResponse = ({ response, details }: AIResponseProps) => {
           
           {details && (
             <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400">
-              <h4 className="font-medium mb-2">تفاصيل إضافية:</h4>
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="h-4 w-4" />
+                <h4 className="font-medium">تفاصيل إضافية:</h4>
+              </div>
               <p>{details}</p>
             </div>
           )}

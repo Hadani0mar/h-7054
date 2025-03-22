@@ -14,6 +14,8 @@ interface AIRequestOptions {
   userId?: string;
 }
 
+const API_BASE_URL = 'http://localhost:8000';
+
 /**
  * يرسل طلب إلى خدمة الذكاء الاصطناعي ويعيد الاستجابة
  * @param prompt - طلب المستخدم
@@ -27,7 +29,7 @@ export async function fetchAIResponse(prompt: string, options: AIRequestOptions 
     
     // إذا لم يكن هناك معرف مستخدم، قم بإنشاء واحد جديد
     if (!userId) {
-      const response = await fetch('http://localhost:8000/create_user', {
+      const response = await fetch(`${API_BASE_URL}/create_user`, {
         method: 'POST',
       });
       
@@ -41,7 +43,7 @@ export async function fetchAIResponse(prompt: string, options: AIRequestOptions 
     }
     
     // إرسال الطلب إلى API الخاص بك
-    const response = await fetch('http://localhost:8000/ask', {
+    const response = await fetch(`${API_BASE_URL}/ask`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -84,7 +86,7 @@ export async function fetchConversationHistory(): Promise<ConversationItem[]> {
       return [];
     }
     
-    const response = await fetch(`http://localhost:8000/conversations/${userId}`);
+    const response = await fetch(`${API_BASE_URL}/conversations/${userId}`);
     
     if (!response.ok) {
       throw new Error(`Server responded with status: ${response.status}`);
@@ -96,6 +98,29 @@ export async function fetchConversationHistory(): Promise<ConversationItem[]> {
   } catch (error) {
     console.error('Error fetching conversation history:', error);
     return [];
+  }
+}
+
+/**
+ * ينشئ معرف مستخدم جديد
+ * @returns وعد يحتوي على معرف المستخدم الجديد
+ */
+export async function createNewUser(): Promise<string> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/create_user`, {
+      method: 'POST',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`فشل إنشاء معرف المستخدم: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    localStorage.setItem('bn0mar_user_id', data.user_id);
+    return data.user_id;
+  } catch (error) {
+    console.error('Error creating new user:', error);
+    throw error;
   }
 }
 
