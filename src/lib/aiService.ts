@@ -4,6 +4,12 @@ interface AIResponseData {
   error?: string;
 }
 
+interface ConversationItem {
+  question: string;
+  answer: string;
+  details?: string;
+}
+
 interface AIRequestOptions {
   userId?: string;
 }
@@ -70,7 +76,7 @@ export async function fetchAIResponse(prompt: string, options: AIRequestOptions 
  * يجلب المحادثات السابقة للمستخدم
  * @returns وعد يحتوي على المحادثات السابقة
  */
-export async function fetchConversationHistory(): Promise<{question: string; answer: string}[]> {
+export async function fetchConversationHistory(): Promise<ConversationItem[]> {
   try {
     const userId = localStorage.getItem('bn0mar_user_id');
     

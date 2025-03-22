@@ -12,6 +12,7 @@ import {
   ArrowUpRight, 
   Command,
   RefreshCw,
+  Info,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AIResponse from '@/components/AIResponse';
@@ -19,12 +20,24 @@ import { fetchAIResponse, fetchConversationHistory, clearUserSession } from '@/l
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+interface ConversationItem {
+  question: string;
+  answer: string;
+  details?: string;
+}
 
 const Index = () => {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [history, setHistory] = useState<{question: string; answer: string}[]>([]);
+  const [history, setHistory] = useState<ConversationItem[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [isFetchingHistory, setIsFetchingHistory] = useState(false);
   const { toast } = useToast();
@@ -73,7 +86,7 @@ const Index = () => {
       
       setResponse(result.response);
       
-      // تحديث التاريخ بعد الحصول على الرد
+      // تحديث التاريخ محليًا (سيتم تحديث التاريخ الفعلي من الخادم عند إعادة التحميل)
       setHistory(prevHistory => [
         { question: currentQuestion, answer: result.response },
         ...prevHistory
@@ -318,18 +331,29 @@ const Index = () => {
                           whileHover={{ scale: 1.05 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <Button 
-                            type="button"
-                            variant="outline" 
-                            size="sm"
-                            className="text-xs bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
-                            onClick={() => handleSuggestionClick(item.question)}
-                          >
-                            <span className="truncate max-w-[200px]">
-                              {item.question}
-                            </span>
-                            <ArrowUpRight className="h-3 w-3 ml-1 text-slate-500 dark:text-slate-400" />
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  type="button"
+                                  variant="outline" 
+                                  size="sm"
+                                  className="text-xs bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+                                  onClick={() => handleSuggestionClick(item.question)}
+                                >
+                                  <span className="truncate max-w-[200px]">
+                                    {item.question}
+                                  </span>
+                                  <ArrowUpRight className="h-3 w-3 ml-1 text-slate-500 dark:text-slate-400" />
+                                </Button>
+                              </TooltipTrigger>
+                              {item.details && (
+                                <TooltipContent>
+                                  <p className="text-xs">{item.details}</p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
                         </motion.div>
                       ))}
                     </div>

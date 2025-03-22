@@ -7,9 +7,10 @@ import { Card } from '@/components/ui/card';
 
 interface AIResponseProps {
   response: string;
+  details?: string;
 }
 
-const AIResponse = ({ response }: AIResponseProps) => {
+const AIResponse = ({ response, details }: AIResponseProps) => {
   const [isCopied, setIsCopied] = useState(false);
 
   const handleCopy = (text: string) => {
@@ -52,6 +53,13 @@ const AIResponse = ({ response }: AIResponseProps) => {
           dir="rtl"
         >
           {response}
+          
+          {details && (
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400">
+              <h4 className="font-medium mb-2">تفاصيل إضافية:</h4>
+              <p>{details}</p>
+            </div>
+          )}
         </motion.div>
       </Card>
     </motion.div>
