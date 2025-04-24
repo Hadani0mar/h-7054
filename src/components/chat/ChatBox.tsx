@@ -9,8 +9,9 @@ import { Send, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Update the Message interface to match the database schema
 interface Message {
-  id: string;
+  id?: string;
   ride_id: string;
   sender_id: string;
   message: string;
@@ -51,10 +52,7 @@ const ChatBox = ({ rideId, recipientId }: ChatBoxProps) => {
         .from('ride_messages')
         .select(`
           *,
-          sender:sender_id (
-            full_name,
-            avatar_url
-          )
+          sender:profiles!ride_messages_sender_id_fkey(full_name, avatar_url)
         `)
         .eq('ride_id', rideId)
         .order('created_at', { ascending: true });
@@ -65,7 +63,7 @@ const ChatBox = ({ rideId, recipientId }: ChatBoxProps) => {
       }
       
       if (data) {
-        setMessages(data);
+        setMessages(data as Message[]);
       }
     };
     
@@ -73,28 +71,26 @@ const ChatBox = ({ rideId, recipientId }: ChatBoxProps) => {
     
     // الاشتراك في الرسائل الجديدة
     const channel = supabase
-      .channel('ride_messages_changes')
+      .channel(`ride_messages_${rideId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'ride_messages',
         filter: `ride_id=eq.${rideId}`
-      }, (payload) => {
+      }, async (payload) => {
         const newMsg = payload.new as Message;
         
         // جلب معلومات المرسل
-        supabase
+        const { data: senderProfile } = await supabase
           .from('profiles')
           .select('full_name, avatar_url')
           .eq('id', newMsg.sender_id)
-          .single()
-          .then(({ data }) => {
-            if (data) {
-              setMessages(prev => [...prev, { ...newMsg, sender: data }]);
-            } else {
-              setMessages(prev => [...prev, newMsg]);
-            }
-          });
+          .single();
+        
+        setMessages(prev => [...prev, { 
+          ...newMsg, 
+          sender: senderProfile || undefined 
+        }]);
       })
       .subscribe();
     
@@ -106,7 +102,7 @@ const ChatBox = ({ rideId, recipientId }: ChatBoxProps) => {
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !rideId) return;
     
-    const messageData = {
+    const messageData: Omit<Message, 'id' | 'created_at' | 'sender'> = {
       ride_id: rideId,
       sender_id: user.id,
       message: newMessage.trim()
