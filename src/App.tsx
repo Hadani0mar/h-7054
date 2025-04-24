@@ -14,9 +14,16 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthGuard } from "./components/AuthGuard";
 import { AuthProvider } from "./contexts/AuthContext";
 import DashboardLayout from "./components/DashboardLayout";
+import { useEffect } from "react";
+import { getMapboxToken } from "./lib/mapService";
 
-// Show a console warning about Map.tsx issue
-console.warn("Note: Map.tsx has issues with setData property. This is a known issue but we can't directly modify the read-only file.");
+// التحقق من وجود توكن Mapbox
+useEffect(() => {
+  const mapboxToken = getMapboxToken();
+  if (!mapboxToken) {
+    console.error("Mapbox token is missing. Maps will not work correctly.");
+  }
+}, []);
 
 const queryClient = new QueryClient();
 

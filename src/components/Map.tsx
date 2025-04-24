@@ -1,10 +1,12 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Coordinates } from "@/types";
+import { getMapboxToken } from "@/lib/mapService";
 
-// تكوين Mapbox
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || "";
+// تكوين Mapbox - استخدام التوكن من mapService
+mapboxgl.accessToken = getMapboxToken();
 
 interface MapProps {
   userLocation?: Coordinates;
