@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Map from "@/components/Map";
+import MapContainer from "@/components/maps/MapContainer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,7 +24,6 @@ import { searchLocation, reverseGeocode } from "@/lib/mapService";
 import { Coordinates, MapboxLocation, RideStatus } from "@/types";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import MapContainer from "@/components/maps/MapContainer";
 import RideControls from "@/components/ride/RideControls";
 
 const Ride = () => {
