@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Map from "@/components/Map";
+import MapContainer from "@/components/maps/MapContainer";
 import { getActiveRide, getUserRides } from "@/lib/rideService";
 import { updateDriverAvailability } from "@/lib/authService";
 import { Link } from "react-router-dom";
@@ -92,7 +92,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="h-[350px] rounded-lg overflow-hidden">
-              <Map
+              <MapContainer
                 userLocation={
                   profile?.latitude && profile?.longitude
                     ? { latitude: profile.latitude, longitude: profile.longitude }
