@@ -1,50 +1,45 @@
 
 import React, { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { Bot, Trash2, RefreshCw, Command } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import AIResponse from '@/components/AIResponse';
-import UserIdCreator from '@/components/UserIdCreator';
-import ConversationHistory from '@/components/ConversationHistory';
-import QuestionInput from '@/components/QuestionInput';
-import { fetchAIResponse, fetchConversationHistory, clearUserSession } from '@/lib/aiService';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-
-interface ConversationItem {
-  question: string;
-  answer: string;
-  details?: string;
-}
+import { useToast } from '@/hooks/use-toast';
+import { 
+  Loader2, 
+  Send, 
+  Bot, 
+  Trash2, 
+  CornerDownLeft, 
+  ArrowUpRight, 
+  Command,
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import AIResponse from '@/components/AIResponse';
+import { fetchAIResponse } from '@/lib/aiService';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Index = () => {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
-  const [details, setDetails] = useState<string | undefined>(undefined);
+  const [processedResponse, setProcessedResponse] = useState<{text: string, code_blocks: string[]} | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
-  const [history, setHistory] = useState<ConversationItem[]>([]);
+  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
+  const [history, setHistory] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [isFetchingHistory, setIsFetchingHistory] = useState(false);
-  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const { toast } = useToast();
 
-  // جلب محادثات المستخدم السابقة عند تحميل الصفحة
   useEffect(() => {
-    const loadConversationHistory = async () => {
-      setIsFetchingHistory(true);
-      try {
-        const conversations = await fetchConversationHistory();
-        setHistory(conversations);
-      } catch (error) {
-        console.error('Failed to load conversation history:', error);
-      } finally {
-        setIsFetchingHistory(false);
-      }
-    };
+    // استرجاع التاريخ من التخزين المحلي
+    const savedHistory = localStorage.getItem('promptHistory');
+    if (savedHistory) {
+      setHistory(JSON.parse(savedHistory));
+    }
     
-    if (localStorage.getItem('bn0mar_user_id')) {
-      loadConversationHistory();
+    // استرجاع معرف الجلسة من التخزين المحلي
+    const savedSessionId = localStorage.getItem('sessionId');
+    if (savedSessionId) {
+      setSessionId(savedSessionId);
     }
   }, []);
 
@@ -62,26 +57,30 @@ const Index = () => {
     
     setIsLoading(true);
     setResponse('');
-    setDetails(undefined);
+    setProcessedResponse(undefined);
     
     try {
-      // حفظ السؤال الحالي لعرضه أثناء معالجة الطلب
-      const currentQuestion = prompt;
+      // إضافة الطلب إلى التاريخ
+      const newHistory = [...history, prompt];
+      setHistory(newHistory);
+      localStorage.setItem('promptHistory', JSON.stringify(newHistory));
       
-      const result = await fetchAIResponse(prompt);
+      const options = {
+        sessionId
+      };
       
-      if (result.error) {
-        throw new Error(result.error);
+      const result = await fetchAIResponse(prompt, options);
+      
+      if (result.session_id) {
+        setSessionId(result.session_id);
+        localStorage.setItem('sessionId', result.session_id);
+      }
+      
+      if (result.processed) {
+        setProcessedResponse(result.processed);
       }
       
       setResponse(result.response);
-      
-      // تحديث التاريخ محليًا (سيتم تحديث التاريخ الفعلي من الخادم عند إعادة التحميل)
-      await refreshHistory();
-      
-      // مسح مربع النص بعد الإرسال
-      setPrompt('');
-      
     } catch (error) {
       console.error('Error fetching AI response:', error);
       toast({
@@ -100,48 +99,19 @@ const Index = () => {
     setTimeout(() => setIsTyping(false), 500);
   };
 
-  const refreshHistory = async () => {
-    setIsFetchingHistory(true);
-    try {
-      const conversations = await fetchConversationHistory();
-      setHistory(conversations);
-      return conversations;
-    } catch (error) {
-      console.error('Failed to refresh conversation history:', error);
-      toast({
-        title: "خطأ",
-        description: "فشل تحديث سجل المحادثات",
-        variant: "destructive",
-      });
-      return [];
-    } finally {
-      setIsFetchingHistory(false);
-    }
-  };
-
   const clearHistory = () => {
-    // مسح جلسة المستخدم من التخزين المحلي
-    clearUserSession();
     setHistory([]);
-    setResponse('');
-    setDetails(undefined);
+    localStorage.removeItem('promptHistory');
     toast({
       title: "تم مسح التاريخ",
-      description: "تم مسح جميع المحادثات السابقة وإنشاء جلسة جديدة",
+      description: "تم مسح جميع الطلبات السابقة بنجاح",
     });
   };
 
-  const handleNewUserCreated = (userId: string) => {
-    // مسح التاريخ والاستجابة عند إنشاء مستخدم جديد
-    setHistory([]);
-    setResponse('');
-    setDetails(undefined);
-  };
-
   const suggestions = [
-    "شن يدير مصمم واجهات المستخدم؟",
-    "اكتبلي برنامج بايثون يحسب مجموع الأرقام من 1 إلى 100",
-    "علمني كيفية نكتب قصة قصيرة باللهجة الليبية"
+    "اكتب برنامج بايثون لحساب مجموع الأرقام من 1 إلى 100",
+    "كيف يمكنني إنشاء خوارزمية تصنيف الصور؟",
+    "اشرح كيفية استخدام مكتبة pandas في بايثون"
   ];
 
   const containerVariants = {
@@ -171,7 +141,7 @@ const Index = () => {
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="ai-container py-8 md:py-12 max-w-4xl mx-auto px-4"
+        className="ai-container py-8 md:py-12"
       >
         <motion.header 
           variants={itemVariants} 
@@ -196,17 +166,17 @@ const Index = () => {
             variants={itemVariants}
             className="text-lg text-slate-600 dark:text-slate-400 max-w-xl mx-auto"
           >
-            اسأل أي سؤال وسأجيبك باللهجة الليبية
+            أرسل طلبك وسأقوم بمعالجته والإجابة عليه بدقة وكفاءة عالية
           </motion.p>
           
-          {localStorage.getItem('bn0mar_user_id') && (
+          {sessionId && (
             <motion.div
               variants={itemVariants}
               className="mt-2"
             >
               <span className="text-xs bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 inline-flex items-center">
                 <Command className="h-3 w-3 mr-1" />
-                معرف المستخدم: {localStorage.getItem('bn0mar_user_id')?.substring(0, 8)}...
+                محادثة مستمرة
               </span>
             </motion.div>
           )}
@@ -218,83 +188,109 @@ const Index = () => {
         >
           <Card className="ai-subtle-card">
             <CardContent className="p-6">
-              {!localStorage.getItem('bn0mar_user_id') && (
-                <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                  <p className="text-yellow-800 dark:text-yellow-300 text-sm mb-3">
-                    لم يتم إنشاء معرف مستخدم بعد. يرجى إنشاء معرف مستخدم للبدء.
-                  </p>
-                  <UserIdCreator 
-                    onNewUserCreated={handleNewUserCreated} 
-                    isCreatingUser={isCreatingUser}
-                    setIsCreatingUser={setIsCreatingUser}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="relative">
+                  <Textarea
+                    placeholder="اكتب سؤالك أو طلبك هنا..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="min-h-[120px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-slate-400 dark:focus:border-slate-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 resize-none shadow-inner transition-all duration-200 text-lg"
+                    dir="rtl"
                   />
-                </div>
-              )}
-              
-              <QuestionInput 
-                value={prompt}
-                onChange={setPrompt}
-                onSubmit={handleSubmit}
-                isLoading={isLoading}
-                isTyping={isTyping}
-              />
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mt-6">
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 order-1 sm:order-2 w-full sm:w-auto">
-                  {isFetchingHistory ? (
-                    <span className="flex items-center">
-                      <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
-                      جاري التحميل...
-                    </span>
-                  ) : (
-                    <>
-                      {history.length > 0 && (
-                        <div className="flex gap-2 items-center w-full justify-between sm:justify-start">
-                          <span className="whitespace-nowrap">لديك {history.length} محادثة سابقة</span>
-                          <div className="flex gap-2">
-                            <Button 
-                              type="button"
-                              variant="ghost" 
-                              size="sm"
-                              className="text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
-                              onClick={() => refreshHistory()}
-                            >
-                              <RefreshCw className="h-4 w-4 mr-1" />
-                              تحديث
-                            </Button>
-                            <Button 
-                              type="button"
-                              variant="ghost" 
-                              size="sm"
-                              className="text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
-                              onClick={clearHistory}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              مسح
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
+                  
+                  <div className="absolute bottom-3 left-3 flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                    {isTyping ? (
+                      <motion.span 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-slate-500 dark:text-slate-400 text-xs flex items-center"
+                      >
+                        <Command className="h-3 w-3 mr-1" />
+                        جاري الكتابة...
+                      </motion.span>
+                    ) : (
+                      <span className="text-xs flex items-center">
+                        <CornerDownLeft className="h-3 w-3 mr-1" />
+                        اضغط Enter للإرسال
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
-                {!isCreatingUser && localStorage.getItem('bn0mar_user_id') && (
-                  <div className="order-2 sm:order-1 w-full sm:w-auto">
-                    <UserIdCreator 
-                      onNewUserCreated={handleNewUserCreated} 
-                      isCreatingUser={isCreatingUser}
-                      setIsCreatingUser={setIsCreatingUser}
-                    />
-                  </div>
-                )}
-              </div>
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full sm:w-auto order-2 sm:order-1"
+                  >
+                    <Button 
+                      type="submit" 
+                      className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg shadow-sm"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          جاري المعالجة...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-5 w-5 mr-2" />
+                          إرسال الطلب
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+                  
+                  {history.length > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 order-1 sm:order-2">
+                      <span>لديك {history.length} طلب سابق</span>
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm"
+                        className="text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
+                        onClick={clearHistory}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        مسح التاريخ
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </form>
               
-              <ConversationHistory 
-                history={history} 
-                onSelectQuestion={handleSuggestionClick}
-                loadingState={isLoading}
-              />
+              {history.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">الطلبات السابقة:</h3>
+                  <ScrollArea className="h-20">
+                    <div className="flex flex-wrap gap-2">
+                      {history.slice(-5).map((item, index) => (
+                        <motion.div 
+                          key={index}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            size="sm"
+                            className="text-xs bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+                            onClick={() => handleSuggestionClick(item)}
+                          >
+                            <span className="truncate max-w-[200px]">
+                              {item}
+                            </span>
+                            <ArrowUpRight className="h-3 w-3 ml-1 text-slate-500 dark:text-slate-400" />
+                          </Button>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
               
               <div className="mt-6">
                 <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">اقتراحات للبدء:</h3>
@@ -331,7 +327,7 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <AIResponse response={response} details={details} />
+            <AIResponse response={response} processedResponse={processedResponse} />
           </motion.div>
         )}
         
@@ -339,7 +335,7 @@ const Index = () => {
           variants={itemVariants}
           className="mt-10 text-center text-slate-500 dark:text-slate-500 text-sm"
         >
-          <p className="mb-2">M0usaBn0mar 2024</p>
+          <p className="mb-2">Bn0mar</p>
         </motion.footer>
       </motion.div>
     </div>
