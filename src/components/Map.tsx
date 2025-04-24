@@ -1,43 +1,38 @@
-
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { getMapboxToken } from "@/lib/mapService";
 import { Coordinates } from "@/types";
+
+// تكوين Mapbox
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || "";
 
 interface MapProps {
   userLocation?: Coordinates;
-  driverLocation?: Coordinates;
   pickupLocation?: Coordinates;
   destinationLocation?: Coordinates;
+  driverLocation?: Coordinates;
   onMapClick?: (lngLat: { lng: number; lat: number }) => void;
-  className?: string;
-  interactive?: boolean;
 }
 
-const Map = ({
+const Map: React.FC<MapProps> = ({
   userLocation,
-  driverLocation,
   pickupLocation,
   destinationLocation,
+  driverLocation,
   onMapClick,
-  className = "",
-  interactive = true,
-}: MapProps) => {
+}) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const userMarker = useRef<mapboxgl.Marker | null>(null);
-  const driverMarker = useRef<mapboxgl.Marker | null>(null);
-  const pickupMarker = useRef<mapboxgl.Marker | null>(null);
-  const destinationMarker = useRef<mapboxgl.Marker | null>(null);
-  const [routeSource, setRouteSource] = useState<boolean>(false);
+  const [mapInitialized, setMapInitialized] = useState(false);
 
+  // تهيئة الخريطة
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || map.current) return;
 
-    mapboxgl.accessToken = getMapboxToken();
-
-    const initialLocation = userLocation || { latitude: 32.887, longitude: 13.191 }; // موقع افتراضي: طرابلس، ليبيا
+    const initialLocation = userLocation || {
+      latitude: 32.8872,
+      longitude: 13.1913, // إحداثيات طرابلس كموقع افتراضي
+    };
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -46,180 +41,280 @@ const Map = ({
       zoom: 13,
     });
 
-    if (interactive) {
-      map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-    } else {
-      map.current.scrollZoom.disable();
-      map.current.boxZoom.disable();
-      map.current.dragRotate.disable();
-      map.current.dragPan.disable();
-      map.current.keyboard.disable();
-      map.current.doubleClickZoom.disable();
-      map.current.touchZoomRotate.disable();
+    map.current.on("load", () => {
+      setMapInitialized(true);
+    });
+
+    if (onMapClick) {
+      map.current.on("click", (e) => {
+        onMapClick(e.lngLat);
+      });
     }
 
-    map.current.on("load", () => {
-      map.current?.resize();
-
-      // إعداد مصدر ومسار للمسار بين النقاط
-      map.current?.addSource("route", {
-        type: "geojson",
-        data: {
-          type: "Feature",
-          properties: {},
-          geometry: {
-            type: "LineString",
-            coordinates: []
-          }
-        }
-      });
-
-      map.current?.addLayer({
-        id: "route",
-        type: "line",
-        source: "route",
-        layout: {
-          "line-join": "round",
-          "line-cap": "round"
+    // إضافة أزرار التحكم في الخريطة
+    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    map.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
+    map.current.addControl(
+      new mapboxgl.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true,
         },
-        paint: {
-          "line-color": "#3887be",
-          "line-width": 5,
-          "line-opacity": 0.75
-        }
-      });
-
-      setRouteSource(true);
-
-      if (onMapClick) {
-        map.current?.on("click", (e) => {
-          onMapClick({ lng: e.lngLat.lng, lat: e.lngLat.lat });
-        });
-      }
-    });
+        trackUserLocation: true,
+      }),
+      "top-right"
+    );
 
     return () => {
-      map.current?.remove();
-    };
-  }, []);
-
-  // تحديث موقع المستخدم
-  useEffect(() => {
-    if (!map.current || !userLocation) return;
-    
-    if (!userMarker.current) {
-      const el = document.createElement("div");
-      el.className = "relative flex h-8 w-8 items-center justify-center";
-      el.innerHTML = `
-        <div class="absolute h-8 w-8 animate-ping rounded-full bg-blue-400 opacity-75"></div>
-        <div class="relative h-6 w-6 rounded-full bg-blue-500 border-2 border-white"></div>
-      `;
-      userMarker.current = new mapboxgl.Marker(el)
-        .setLngLat([userLocation.longitude, userLocation.latitude])
-        .addTo(map.current);
-    } else {
-      userMarker.current.setLngLat([userLocation.longitude, userLocation.latitude]);
-    }
-    
-    map.current.flyTo({
-      center: [userLocation.longitude, userLocation.latitude],
-    });
-  }, [userLocation]);
-
-  // تحديث موقع السائق
-  useEffect(() => {
-    if (!map.current || !driverLocation) return;
-    
-    if (!driverMarker.current) {
-      const el = document.createElement("div");
-      el.className = "relative flex h-8 w-8 items-center justify-center";
-      el.innerHTML = `
-        <div class="absolute h-8 w-8 animate-ping rounded-full bg-green-400 opacity-75"></div>
-        <div class="relative h-6 w-6 rounded-full bg-green-600 border-2 border-white flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4 text-white">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-4-4v8m-8 0h12a2 2 0 002-2v-4a2 2 0 00-2-2H8a2 2 0 00-2 2v4a2 2 0 002 2z" />
-          </svg>
-        </div>
-      `;
-      driverMarker.current = new mapboxgl.Marker(el)
-        .setLngLat([driverLocation.longitude, driverLocation.latitude])
-        .addTo(map.current);
-    } else {
-      driverMarker.current.setLngLat([driverLocation.longitude, driverLocation.latitude]);
-    }
-  }, [driverLocation]);
-
-  // تحديث موقع الانطلاق
-  useEffect(() => {
-    if (!map.current || !pickupLocation) return;
-    
-    if (!pickupMarker.current) {
-      const el = document.createElement("div");
-      el.className = "flex h-10 w-10 items-center justify-center";
-      el.innerHTML = `
-        <div class="h-10 w-10 rounded-full bg-yellow-500 border-2 border-white flex items-center justify-center text-white font-bold">
-          A
-        </div>
-      `;
-      pickupMarker.current = new mapboxgl.Marker(el)
-        .setLngLat([pickupLocation.longitude, pickupLocation.latitude])
-        .addTo(map.current);
-    } else {
-      pickupMarker.current.setLngLat([pickupLocation.longitude, pickupLocation.latitude]);
-    }
-  }, [pickupLocation]);
-
-  // تحديث موقع الوصول
-  useEffect(() => {
-    if (!map.current || !destinationLocation) return;
-    
-    if (!destinationMarker.current) {
-      const el = document.createElement("div");
-      el.className = "flex h-10 w-10 items-center justify-center";
-      el.innerHTML = `
-        <div class="h-10 w-10 rounded-full bg-red-500 border-2 border-white flex items-center justify-center text-white font-bold">
-          B
-        </div>
-      `;
-      destinationMarker.current = new mapboxgl.Marker(el)
-        .setLngLat([destinationLocation.longitude, destinationLocation.latitude])
-        .addTo(map.current);
-    } else {
-      destinationMarker.current.setLngLat([destinationLocation.longitude, destinationLocation.latitude]);
-    }
-  }, [destinationLocation]);
-
-  // رسم المسار بين موقع الانطلاق والوصول
-  useEffect(() => {
-    if (!map.current || !routeSource || !pickupLocation || !destinationLocation) return;
-
-    // تحديث مصدر بيانات المسار
-    const routeCoordinates = [
-      [pickupLocation.longitude, pickupLocation.latitude],
-      [destinationLocation.longitude, destinationLocation.latitude]
-    ];
-    
-    map.current.getSource("route").setData({
-      type: "Feature",
-      properties: {},
-      geometry: {
-        type: "LineString",
-        coordinates: routeCoordinates
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
       }
-    });
+    };
+  }, [userLocation, onMapClick]);
 
-    // ضبط مدى الخريطة ليشمل المسار كامل
-    const bounds = new mapboxgl.LngLatBounds()
-      .extend([pickupLocation.longitude, pickupLocation.latitude])
-      .extend([destinationLocation.longitude, destinationLocation.latitude]);
+  // إضافة موقع المستخدم
+  useEffect(() => {
+    if (!map.current || !mapInitialized || !userLocation) return;
 
-    map.current.fitBounds(bounds, {
-      padding: 100,
-      maxZoom: 15
-    });
-  }, [pickupLocation, destinationLocation, routeSource]);
+    // إزالة الماركر القديم إن وجد
+    const userMarkerElement = document.getElementById("user-marker");
+    if (userMarkerElement) {
+      userMarkerElement.remove();
+    }
 
-  return <div ref={mapContainer} className={`w-full h-full min-h-[300px] rounded-lg ${className}`} />;
+    // إنشاء عنصر HTML للماركر
+    const markerElement = document.createElement("div");
+    markerElement.id = "user-marker";
+    markerElement.className = "user-marker";
+    markerElement.style.width = "20px";
+    markerElement.style.height = "20px";
+    markerElement.style.borderRadius = "50%";
+    markerElement.style.backgroundColor = "#4F46E5";
+    markerElement.style.border = "3px solid white";
+    markerElement.style.boxShadow = "0 0 0 2px rgba(0, 0, 0, 0.1)";
+
+    // إضافة الماركر إلى الخريطة
+    new mapboxgl.Marker(markerElement)
+      .setLngLat([userLocation.longitude, userLocation.latitude])
+      .addTo(map.current);
+
+    // تحريك الخريطة إلى موقع المستخدم إذا لم يتم تحديد مواقع أخرى
+    if (!pickupLocation && !destinationLocation) {
+      map.current.flyTo({
+        center: [userLocation.longitude, userLocation.latitude],
+        zoom: 15,
+        speed: 1.5,
+      });
+    }
+  }, [userLocation, mapInitialized, pickupLocation, destinationLocation]);
+
+  // إضافة موقع السائق
+  useEffect(() => {
+    if (!map.current || !mapInitialized || !driverLocation) return;
+
+    // إزالة الماركر القديم إن وجد
+    const driverMarkerElement = document.getElementById("driver-marker");
+    if (driverMarkerElement) {
+      driverMarkerElement.remove();
+    }
+
+    // إنشاء عنصر HTML للماركر
+    const markerElement = document.createElement("div");
+    markerElement.id = "driver-marker";
+    markerElement.className = "driver-marker";
+    markerElement.style.width = "24px";
+    markerElement.style.height = "24px";
+    markerElement.style.borderRadius = "50%";
+    markerElement.style.backgroundColor = "#10B981";
+    markerElement.style.border = "3px solid white";
+    markerElement.style.boxShadow = "0 0 0 2px rgba(0, 0, 0, 0.1)";
+    markerElement.style.display = "flex";
+    markerElement.style.alignItems = "center";
+    markerElement.style.justifyContent = "center";
+
+    // إضافة أيقونة السيارة
+    const carIcon = document.createElement("div");
+    carIcon.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path>
+        <circle cx="6.5" cy="16.5" r="2.5"></circle>
+        <circle cx="16.5" cy="16.5" r="2.5"></circle>
+      </svg>
+    `;
+    markerElement.appendChild(carIcon);
+
+    // إضافة الماركر إلى الخريطة
+    new mapboxgl.Marker(markerElement)
+      .setLngLat([driverLocation.longitude, driverLocation.latitude])
+      .addTo(map.current);
+  }, [driverLocation, mapInitialized]);
+
+  // إضافة موقع الانطلاق
+  useEffect(() => {
+    if (!map.current || !mapInitialized || !pickupLocation) return;
+
+    // إزالة الماركر القديم إن وجد
+    const pickupMarkerElement = document.getElementById("pickup-marker");
+    if (pickupMarkerElement) {
+      pickupMarkerElement.remove();
+    }
+
+    // إنشاء عنصر HTML للماركر
+    const markerElement = document.createElement("div");
+    markerElement.id = "pickup-marker";
+    markerElement.className = "pickup-marker";
+    markerElement.style.width = "22px";
+    markerElement.style.height = "22px";
+    markerElement.style.borderRadius = "50%";
+    markerElement.style.backgroundColor = "#3B82F6";
+    markerElement.style.border = "3px solid white";
+    markerElement.style.boxShadow = "0 0 0 2px rgba(0, 0, 0, 0.1)";
+
+    // إضافة الماركر إلى الخريطة
+    new mapboxgl.Marker(markerElement)
+      .setLngLat([pickupLocation.longitude, pickupLocation.latitude])
+      .addTo(map.current);
+
+    // إضافة مسار إذا كان هناك موقع وصول
+    if (destinationLocation) {
+      drawRoute(
+        [pickupLocation.longitude, pickupLocation.latitude],
+        [destinationLocation.longitude, destinationLocation.latitude]
+      );
+    } else {
+      // تحريك الخريطة إلى موقع الانطلاق
+      map.current.flyTo({
+        center: [pickupLocation.longitude, pickupLocation.latitude],
+        zoom: 15,
+        speed: 1.5,
+      });
+    }
+  }, [pickupLocation, destinationLocation, mapInitialized]);
+
+  // إضافة موقع الوصول
+  useEffect(() => {
+    if (!map.current || !mapInitialized || !destinationLocation) return;
+
+    // إزالة الماركر القديم إن وجد
+    const destinationMarkerElement = document.getElementById(
+      "destination-marker"
+    );
+    if (destinationMarkerElement) {
+      destinationMarkerElement.remove();
+    }
+
+    // إنشاء عنصر HTML للماركر
+    const markerElement = document.createElement("div");
+    markerElement.id = "destination-marker";
+    markerElement.className = "destination-marker";
+    markerElement.style.width = "22px";
+    markerElement.style.height = "22px";
+    markerElement.style.borderRadius = "50%";
+    markerElement.style.backgroundColor = "#EF4444";
+    markerElement.style.border = "3px solid white";
+    markerElement.style.boxShadow = "0 0 0 2px rgba(0, 0, 0, 0.1)";
+
+    // إضافة الماركر إلى الخريطة
+    new mapboxgl.Marker(markerElement)
+      .setLngLat([destinationLocation.longitude, destinationLocation.latitude])
+      .addTo(map.current);
+
+    // إضافة مسار إذا كان هناك موقع انطلاق
+    if (pickupLocation) {
+      drawRoute(
+        [pickupLocation.longitude, pickupLocation.latitude],
+        [destinationLocation.longitude, destinationLocation.latitude]
+      );
+    } else {
+      // تحريك الخريطة إلى موقع الوصول
+      map.current.flyTo({
+        center: [destinationLocation.longitude, destinationLocation.latitude],
+        zoom: 15,
+        speed: 1.5,
+      });
+    }
+  }, [destinationLocation, pickupLocation, mapInitialized]);
+
+  // رسم المسار بين نقطتين
+  const drawRoute = (start: [number, number], end: [number, number]) => {
+    if (!map.current) return;
+
+    // إزالة المسار القديم إن وجد
+    if (map.current.getSource("route")) {
+      map.current.removeLayer("route");
+      map.current.removeSource("route");
+    }
+
+    // الحصول على المسار من Mapbox Directions API
+    fetch(
+      `https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?steps=true&geometries=geojson&access_token=${mapboxgl.accessToken}`
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        if (!data.routes || !data.routes.length) return;
+
+        const route = data.routes[0].geometry;
+
+        // إضافة مصدر وطبقة للمسار
+        if (map.current) {
+          if (!map.current.getSource("route")) {
+            map.current.addSource("route", {
+              type: "geojson",
+              data: {
+                type: "Feature",
+                properties: {},
+                geometry: route,
+              },
+            });
+
+            map.current.addLayer({
+              id: "route",
+              type: "line",
+              source: "route",
+              layout: {
+                "line-join": "round",
+                "line-cap": "round",
+              },
+              paint: {
+                "line-color": "#4F46E5",
+                "line-width": 6,
+                "line-opacity": 0.75,
+              },
+            });
+          } else {
+            // تحديث المسار إذا كان موجوداً بالفعل
+            const source = map.current.getSource("route") as mapboxgl.GeoJSONSource;
+            source.setData({
+              type: "Feature",
+              properties: {},
+              geometry: route,
+            });
+          }
+
+          // ضبط الخريطة لتظهر المسار كاملاً
+          const bounds = new mapboxgl.LngLatBounds()
+            .extend([start[0], start[1]])
+            .extend([end[0], end[1]]);
+
+          map.current.fitBounds(bounds, {
+            padding: 100,
+            maxZoom: 15,
+            duration: 1000,
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching directions:", error);
+      });
+  };
+
+  return (
+    <div
+      ref={mapContainer}
+      className="w-full h-full rounded-lg overflow-hidden"
+      style={{ minHeight: "100%" }}
+    />
+  );
 };
 
 export default Map;

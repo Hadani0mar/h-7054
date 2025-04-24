@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Car, User, Star, MapPin, Globe, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Badge } from '@/components/ui/badge';
 
 const Index = () => {
   const { isAuthenticated, isLoading } = useAuth();

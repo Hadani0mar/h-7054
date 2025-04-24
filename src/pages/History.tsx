@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,15 +44,12 @@ const History = () => {
   }, []);
 
   useEffect(() => {
-    // تطبيق التصفية على الرحلات
     let result = [...rides];
     
-    // تصفية حسب الحالة
     if (statusFilter !== "all") {
       result = result.filter((ride) => ride.status === statusFilter);
     }
     
-    // تصفية حسب البحث
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
@@ -100,7 +96,6 @@ const History = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {/* فلاتر البحث */}
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
                 <Input
@@ -129,7 +124,6 @@ const History = () => {
               </Select>
             </div>
             
-            {/* قائمة الرحلات */}
             {loading ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin" />

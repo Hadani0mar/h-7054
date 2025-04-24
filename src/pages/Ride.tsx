@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -30,13 +29,11 @@ const Ride = () => {
   const rideId = searchParams.get("id");
   const navigate = useNavigate();
 
-  // حالات الصفحة
   const [loading, setLoading] = useState(true);
   const [rideDetails, setRideDetails] = useState<any | null>(null);
   const [userLocation, setUserLocation] = useState<Coordinates | undefined>(undefined);
   const [nearbyDrivers, setNearbyDrivers] = useState<any[]>([]);
 
-  // حالات طلب الرحلة
   const [pickupSearch, setPickupSearch] = useState("");
   const [destinationSearch, setDestinationSearch] = useState("");
   const [pickupResults, setPickupResults] = useState<MapboxLocation[]>([]);
@@ -49,7 +46,6 @@ const Ride = () => {
   const [isSearchingDestination, setIsSearchingDestination] = useState(false);
   const [isCreatingRide, setIsCreatingRide] = useState(false);
 
-  // حالات التقييم
   const [rating, setRating] = useState<number | null>(null);
   const [ratingComment, setRatingComment] = useState("");
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
@@ -59,7 +55,6 @@ const Ride = () => {
       try {
         setLoading(true);
         
-        // تحديد الموقع الحالي للمستخدم
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -67,10 +62,8 @@ const Ride = () => {
               setUserLocation({ latitude, longitude });
               
               if (!rideId && userType === 'rider') {
-                // تعيين موقع الانطلاق تلقائيًا للراكب إذا لم يكن هناك رحلة محددة
                 setPickupLocation({ latitude, longitude });
                 
-                // الحصول على العنوان للموقع الحالي
                 try {
                   const address = await reverseGeocode(longitude, latitude);
                   setPickupAddress(address);
@@ -80,7 +73,6 @@ const Ride = () => {
               }
               
               if (!rideId && userType === 'driver') {
-                // جلب السائقين القريبين إذا كان المستخدم سائقاً
                 const { drivers } = await getNearbyDrivers(latitude, longitude);
                 setNearbyDrivers(drivers || []);
               }
@@ -92,7 +84,6 @@ const Ride = () => {
           );
         }
         
-        // جلب تفاصيل الرحلة إذا كان هناك معرف رحلة
         if (rideId) {
           const { ride, error } = await getRideDetails(rideId);
           
@@ -105,7 +96,6 @@ const Ride = () => {
           
           setRideDetails(ride);
           
-          // تعيين مواقع الرحلة
           if (ride) {
             setPickupLocation({
               latitude: ride.pickup_latitude,
@@ -184,7 +174,6 @@ const Ride = () => {
   const handleMapClick = async (lngLat: { lng: number; lat: number }) => {
     if (!userType || userType !== 'rider' || rideId) return;
     
-    // إذا لم يتم تحديد موقع الانطلاق بعد، حدده أولاً
     if (!pickupLocation) {
       setPickupLocation({
         latitude: lngLat.lat,
@@ -200,7 +189,6 @@ const Ride = () => {
       return;
     }
     
-    // إذا تم تحديد موقع الانطلاق بالفعل، حدد موقع الوصول
     if (!destinationLocation) {
       setDestinationLocation({
         latitude: lngLat.lat,
@@ -283,7 +271,6 @@ const Ride = () => {
       toast.success("تم تحديث حالة الرحلة بنجاح");
       setRideDetails(ride);
       
-      // إذا تم إلغاء الرحلة، ارجع إلى لوحة التحكم
       if (status === 'cancelled') {
         navigate("/dashboard");
       }
@@ -360,12 +347,10 @@ const Ride = () => {
     );
   }
 
-  // عرض تفاصيل رحلة محددة
   if (rideId && rideDetails) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row gap-6">
-          {/* خريطة الرحلة */}
           <Card className="md:w-2/3">
             <CardHeader>
               <CardTitle>تفاصيل الرحلة</CardTitle>
@@ -453,12 +438,10 @@ const Ride = () => {
                   </div>
                 </div>
                 
-                {/* أزرار تحديث الحالة */}
                 {rideDetails.status !== 'completed' && rideDetails.status !== 'cancelled' && (
                   <>
                     <Separator />
                     <div className="pt-2">
-                      {/* أزرار للسائق */}
                       {userType === 'driver' && (
                         <div className="space-y-3">
                           {rideDetails.status === 'pending' && (
@@ -504,7 +487,6 @@ const Ride = () => {
                         </div>
                       )}
                       
-                      {/* أزرار للراكب */}
                       {userType === 'rider' && (
                         <div className="space-y-3">
                           {rideDetails.status === 'pending' && (
@@ -523,7 +505,6 @@ const Ride = () => {
                   </>
                 )}
                 
-                {/* قسم التقييم */}
                 {rideDetails.status === 'completed' && (
                   <>
                     <Separator />
@@ -575,7 +556,6 @@ const Ride = () => {
             </CardContent>
           </Card>
 
-          {/* معلومات المستخدم الآخر */}
           <Card className="md:w-1/3">
             <CardHeader>
               <CardTitle>
@@ -599,7 +579,6 @@ const Ride = () => {
               ) : (
                 <div className="flex flex-col items-center space-y-4 text-center">
                   {userType === 'rider' ? (
-                    // معلومات السائق للراكب
                     rideDetails.driver ? (
                       <>
                         <Avatar className="h-24 w-24">
@@ -648,7 +627,6 @@ const Ride = () => {
                       <p>لم يتم تعيين سائق بعد</p>
                     )
                   ) : (
-                    // معلومات الراكب للسائق
                     <>
                       <Avatar className="h-24 w-24">
                         <AvatarImage src={rideDetails.rider?.avatar_url || ''} alt={rideDetails.rider?.full_name || 'الراكب'} />
@@ -698,7 +676,6 @@ const Ride = () => {
     );
   }
 
-  // عرض صفحة طلب رحلة للركاب
   if (userType === 'rider') {
     return (
       <div className="space-y-6">
@@ -711,7 +688,6 @@ const Ride = () => {
               <CardDescription>اختر مواقع الانطلاق والوصول</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* موقع الانطلاق */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium">موقع الانطلاق</label>
                 <div className="relative">
@@ -757,7 +733,6 @@ const Ride = () => {
                 )}
               </div>
               
-              {/* موقع الوصول */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium">موقع الوصول</label>
                 <div className="relative">
@@ -803,7 +778,6 @@ const Ride = () => {
                 )}
               </div>
               
-              {/* معلومات إضافية */}
               <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
                 <div className="flex justify-between mb-2">
                   <span className="text-sm text-slate-600 dark:text-slate-400">السعر التقريبي:</span>
@@ -815,7 +789,6 @@ const Ride = () => {
                 </div>
               </div>
               
-              {/* زر الطلب */}
               <Button
                 className="w-full mt-4"
                 disabled={!pickupLocation || !destinationLocation || isCreatingRide}
@@ -863,7 +836,6 @@ const Ride = () => {
     );
   }
 
-  // عرض صفحة البحث عن رحلات للسائقين
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">البحث عن رحلات</h1>
@@ -881,8 +853,6 @@ const Ride = () => {
               ) : (
                 <p>لا يوجد سائقين قريبين</p>
               )}
-              {/* الجزء الخاص بعرض الرحلات المتاحة للسائقين */}
-              {/* سيتم تنفيذه في المراحل القادمة */}
             </div>
           </CardContent>
         </Card>

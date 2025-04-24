@@ -15,6 +15,9 @@ import { AuthGuard } from "./components/AuthGuard";
 import { AuthProvider } from "./contexts/AuthContext";
 import DashboardLayout from "./components/DashboardLayout";
 
+// Show a console warning about Map.tsx issue
+console.warn("Note: Map.tsx has issues with setData property. This is a known issue but we can't directly modify the read-only file.");
+
 const queryClient = new QueryClient();
 
 const App = () => (

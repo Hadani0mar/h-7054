@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,7 +65,6 @@ const Dashboard = () => {
     return format(new Date(dateString), "PPpp", { locale: ar });
   };
 
-  // حالة التحميل
   if (loading) {
     return (
       <div className="space-y-6">
@@ -82,7 +80,6 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col-reverse md:flex-row gap-6">
-        {/* خريطة وحالة الرحلة النشطة */}
         <Card className="md:w-2/3">
           <CardHeader>
             <CardTitle>الموقع الحالي</CardTitle>
@@ -130,7 +127,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* معلومات الملف الشخصي */}
         <Card className="md:w-1/3">
           <CardHeader>
             <CardTitle>الملف الشخصي</CardTitle>
@@ -221,7 +217,6 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* آخر الرحلات */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -298,7 +293,6 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      {/* زر طلب رحلة/البحث عن رحلات */}
       <div className="fixed bottom-6 right-6">
         <Button 
           size="lg" 
