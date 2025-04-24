@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Coordinates, Profile, Ride, RideStatus } from "@/types";
@@ -51,7 +50,37 @@ export async function createRide(
     if (!session?.user) {
       return { error: "المستخدم غير مسجل الدخول" };
     }
+
+    // حساب سعر الرحلة استنادًا إلى المسافة
+    const distance = calculateDistance(pickupLocation, destinationLocation);
+    const price = calculatePrice(distance);
     
+    // تحقق من رصيد المحفظة
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('wallet_balance')
+      .eq('id', session.user.id)
+      .single();
+    
+    if (profileError) {
+      console.error("خطأ في جلب معلومات المحفظة:", profileError);
+      toast.error("فشل في التحقق من رصيد المحفظة");
+      return { error: profileError };
+    }
+    
+    if (profile.wallet_balance < price) {
+      toast.error(`رصيد المحفظة غير كافٍ. الرصيد الحالي: ${profile.wallet_balance} د.ل، سعر الرحلة: ${price} د.ل`);
+      return { error: "رصيد غير كافٍ" };
+    }
+    
+    // البحث عن سائق متاح
+    const { drivers, error: driversError } = await getNearbyDrivers(pickupLocation.latitude, pickupLocation.longitude);
+    
+    if (driversError) {
+      console.error("خطأ في البحث عن سائقين:", driversError);
+    }
+    
+    // إنشاء الرحلة
     const { data: ride, error } = await supabase
       .from('rides')
       .insert({
@@ -62,6 +91,7 @@ export async function createRide(
         destination_longitude: destinationLocation.longitude,
         pickup_address: pickupAddress,
         destination_address: destinationAddress,
+        price: price,
         status: 'pending'
       })
       .select()
@@ -71,6 +101,29 @@ export async function createRide(
       console.error("خطأ في إنشاء الرحلة:", error);
       toast.error("فشل في إنشاء الرحلة");
       return { error };
+    }
+    
+    // إذا وجدنا سائقين متاحين، اختر واحدًا عشوائيًا
+    if (drivers && drivers.length > 0) {
+      const randomIndex = Math.floor(Math.random() * drivers.length);
+      const randomDriver = drivers[randomIndex];
+      
+      // تخصيص الرحلة للسائق
+      const { error: assignError } = await supabase
+        .from('rides')
+        .update({ 
+          driver_id: randomDriver.id,
+          status: 'accepted'
+        })
+        .eq('id', ride.id);
+      
+      if (assignError) {
+        console.error("خطأ في تخصيص السائق:", assignError);
+      } else {
+        toast.success("تم تخصيص سائق للرحلة");
+      }
+    } else {
+      toast.info("جاري البحث عن سائق متاح");
     }
     
     return { ride };
@@ -243,7 +296,7 @@ export async function getUserRides(status?: RideStatus | RideStatus[]) {
     
     return { rides };
   } catch (error) {
-    console.error("خطأ في جلب الرحلات:", error);
+    console.error("خطأ في جلب الرحلا��:", error);
     return { rides: [], error };
   }
 }
@@ -454,4 +507,19 @@ function calculateDistance(point1: Coordinates, point2: Coordinates) {
 
 function toRadians(degrees: number) {
   return degrees * (Math.PI / 180);
+}
+
+// حساب سعر الرحلة بناءً على المسافة
+function calculatePrice(distance: number): number {
+  // سعر البداية
+  const basePrice = 5;
+  
+  // سعر لكل كيلومتر
+  const pricePerKm = 1.5;
+  
+  // حساب السعر الإجمالي
+  const totalPrice = basePrice + (distance * pricePerKm);
+  
+  // تقريب السعر إلى أقرب 0.5
+  return Math.round(totalPrice * 2) / 2; 
 }

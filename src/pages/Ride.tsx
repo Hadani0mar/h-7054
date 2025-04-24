@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -10,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, MapPin, Search, Car, User, Phone, Star, Check, X, Clock, CreditCard } from "lucide-react";
+import { Loader2, MapPin, Search, Car, User, Phone, Star, Check, X, Clock, CreditCard, MessageCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   acceptRide, 
@@ -25,6 +24,8 @@ import { Coordinates, MapboxLocation, RideStatus } from "@/types";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import RideControls from "@/components/ride/RideControls";
+import ChatBox from "@/components/chat/ChatBox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Ride = () => {
   const { profile, userType } = useAuth();
@@ -82,7 +83,7 @@ const Ride = () => {
             },
             (error) => {
               console.error("خطأ في تحديد الموقع:", error);
-              toast.error("فشل في تحديد موقعك ��لحالي. يرجى السماح بالوصول إلى موقعك.");
+              toast.error("فشل في تحديد موقعك الحالي. يرجى السماح بالوصول إلى موقعك.");
             }
           );
         }
@@ -224,6 +225,9 @@ const Ride = () => {
       );
       
       if (error) {
+        if (error === "رصيد غير كافٍ") {
+          return;
+        }
         console.error("خطأ في إنشاء الرحلة:", error);
         toast.error("فشل في إنشاء طلب الرحلة");
         return;
@@ -351,6 +355,9 @@ const Ride = () => {
   }
 
   if (rideId && rideDetails) {
+    const otherPartyId = userType === 'rider' ? rideDetails.driver?.id : rideDetails.rider?.id;
+    const showChatTab = rideDetails.status === 'accepted' || rideDetails.status === 'in_progress';
+
     return (
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row gap-6">
@@ -365,30 +372,68 @@ const Ride = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-[350px] rounded-lg overflow-hidden mb-4">
-                <MapContainer
-                  pickupLocation={{
-                    latitude: rideDetails.pickup_latitude,
-                    longitude: rideDetails.pickup_longitude
-                  }}
-                  destinationLocation={{
-                    latitude: rideDetails.destination_latitude,
-                    longitude: rideDetails.destination_longitude
-                  }}
-                  userLocation={userLocation}
-                  driverLocation={
-                    userType === 'rider' && rideDetails.driver && rideDetails.status !== 'pending'
-                      ? { latitude: profile?.latitude || 0, longitude: profile?.longitude || 0 }
-                      : undefined
-                  }
-                />
-              </div>
+              {showChatTab ? (
+                <Tabs defaultValue="map" className="mb-4">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="map" className="flex-1">الخريطة</TabsTrigger>
+                    <TabsTrigger value="chat" className="flex-1">المحادثة</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="map" className="mt-4">
+                    <div className="h-[350px] rounded-lg overflow-hidden mb-4">
+                      <MapContainer
+                        pickupLocation={{
+                          latitude: rideDetails.pickup_latitude,
+                          longitude: rideDetails.pickup_longitude
+                        }}
+                        destinationLocation={{
+                          latitude: rideDetails.destination_latitude,
+                          longitude: rideDetails.destination_longitude
+                        }}
+                        userLocation={userLocation}
+                        driverLocation={
+                          userType === 'rider' && rideDetails.driver && rideDetails.status !== 'pending'
+                            ? { latitude: profile?.latitude || 0, longitude: profile?.longitude || 0 }
+                            : undefined
+                        }
+                      />
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="chat" className="mt-4">
+                    <div className="h-[350px]">
+                      <ChatBox 
+                        rideId={rideId} 
+                        recipientId={otherPartyId}
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <div className="h-[350px] rounded-lg overflow-hidden mb-4">
+                  <MapContainer
+                    pickupLocation={{
+                      latitude: rideDetails.pickup_latitude,
+                      longitude: rideDetails.pickup_longitude
+                    }}
+                    destinationLocation={{
+                      latitude: rideDetails.destination_latitude,
+                      longitude: rideDetails.destination_longitude
+                    }}
+                    userLocation={userLocation}
+                    driverLocation={
+                      userType === 'rider' && rideDetails.driver && rideDetails.status !== 'pending'
+                        ? { latitude: profile?.latitude || 0, longitude: profile?.longitude || 0 }
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
+              
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-medium mb-2">مواقع الرحلة</h3>
+                  <h3 className="font-medium mb-2">تفاصيل الرحلة</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-start">
-                      <div className="mr-2 mt-1">
+                      <div className="ml-2 mt-1">
                         <div className="bg-blue-500 h-4 w-4 rounded-full"></div>
                       </div>
                       <div>
@@ -399,7 +444,7 @@ const Ride = () => {
                       </div>
                     </div>
                     <div className="flex items-start">
-                      <div className="mr-2 mt-1">
+                      <div className="ml-2 mt-1">
                         <div className="bg-red-500 h-4 w-4 rounded-full"></div>
                       </div>
                       <div>
@@ -426,7 +471,7 @@ const Ride = () => {
                     <div>
                       <p className="text-slate-600 dark:text-slate-400">سعر الرحلة:</p>
                       <p className="font-medium flex items-center">
-                        <CreditCard className="h-4 w-4 mr-1" />
+                        <CreditCard className="h-4 w-4 ml-1" />
                         {rideDetails.price?.toFixed(2) || '10.00'} د.ل
                       </p>
                     </div>
@@ -452,7 +497,7 @@ const Ride = () => {
                               className="w-full" 
                               onClick={acceptRideRequest}
                             >
-                              <Check className="mr-2 h-5 w-5" />
+                              <Check className="ml-2 h-5 w-5" />
                               قبول الرحلة
                             </Button>
                           )}
@@ -462,7 +507,7 @@ const Ride = () => {
                               className="w-full" 
                               onClick={() => updateStatus('in_progress')}
                             >
-                              <Car className="mr-2 h-5 w-5" />
+                              <Car className="ml-2 h-5 w-5" />
                               بدء الرحلة
                             </Button>
                           )}
@@ -472,7 +517,7 @@ const Ride = () => {
                               className="w-full" 
                               onClick={() => updateStatus('completed')}
                             >
-                              <Check className="mr-2 h-5 w-5" />
+                              <Check className="ml-2 h-5 w-5" />
                               إكمال الرحلة
                             </Button>
                           )}
@@ -483,7 +528,7 @@ const Ride = () => {
                               className="w-full"
                               onClick={() => updateStatus('cancelled')}
                             >
-                              <X className="mr-2 h-5 w-5" />
+                              <X className="ml-2 h-5 w-5" />
                               إلغاء الرحلة
                             </Button>
                           )}
@@ -498,8 +543,19 @@ const Ride = () => {
                               className="w-full"
                               onClick={() => updateStatus('cancelled')}
                             >
-                              <X className="mr-2 h-5 w-5" />
+                              <X className="ml-2 h-5 w-5" />
                               إلغاء الطلب
+                            </Button>
+                          )}
+                          
+                          {(rideDetails.status === 'accepted' || rideDetails.status === 'in_progress') && (
+                            <Button 
+                              variant="outline" 
+                              className="w-full"
+                              onClick={() => document.querySelector('[data-value="chat"]')?.dispatchEvent(new Event('click'))}
+                            >
+                              <MessageCircle className="ml-2 h-5 w-5" />
+                              التحدث مع السائق
                             </Button>
                           )}
                         </div>
@@ -546,9 +602,9 @@ const Ride = () => {
                         onClick={submitRating}
                       >
                         {isSubmittingRating ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
                         ) : (
-                          <Star className="h-4 w-4 mr-2" />
+                          <Star className="h-4 w-4 ml-2" />
                         )}
                         إرسال التقييم
                       </Button>
@@ -594,7 +650,7 @@ const Ride = () => {
                           <h3 className="font-medium text-xl">{rideDetails.driver?.full_name || 'السائق'}</h3>
                           {rideDetails.driver?.rating !== null && (
                             <div className="flex items-center justify-center mt-1">
-                              <span className="font-medium mr-1">
+                              <span className="font-medium ml-1">
                                 {rideDetails.driver?.rating?.toFixed(1) || '0.0'}
                               </span>
                               <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
@@ -609,20 +665,32 @@ const Ride = () => {
                             </p>
                           </div>
                           {rideDetails.status !== 'pending' && (
-                            <Button 
-                              className="mt-4 w-full"
-                              variant="outline"
-                              onClick={() => {
-                                if (rideDetails.driver?.phone) {
-                                  window.location.href = `tel:${rideDetails.driver.phone}`;
-                                } else {
-                                  toast.error("رقم الهاتف غير متوفر");
-                                }
-                              }}
-                            >
-                              <Phone className="mr-2 h-5 w-5" />
-                              اتصال بالسائق
-                            </Button>
+                            <div className="mt-4 space-y-2">
+                              <Button 
+                                className="w-full"
+                                variant="outline"
+                                onClick={() => {
+                                  if (rideDetails.driver?.phone) {
+                                    window.location.href = `tel:${rideDetails.driver.phone}`;
+                                  } else {
+                                    toast.error("رقم الهاتف غير متوفر");
+                                  }
+                                }}
+                              >
+                                <Phone className="ml-2 h-5 w-5" />
+                                اتصال بالسائق
+                              </Button>
+                              
+                              {showChatTab && (
+                                <Button 
+                                  className="w-full"
+                                  onClick={() => document.querySelector('[data-value="chat"]')?.dispatchEvent(new Event('click'))}
+                                >
+                                  <MessageCircle className="ml-2 h-5 w-5" />
+                                  محادثة مع السائق
+                                </Button>
+                              )}
+                            </div>
                           )}
                         </div>
                       </>
@@ -639,20 +707,32 @@ const Ride = () => {
                       </Avatar>
                       <div>
                         <h3 className="font-medium text-xl">{rideDetails.rider?.full_name || 'الراكب'}</h3>
-                        <Button 
-                          className="mt-4 w-full"
-                          variant="outline"
-                          onClick={() => {
-                            if (rideDetails.rider?.phone) {
-                              window.location.href = `tel:${rideDetails.rider.phone}`;
-                            } else {
-                              toast.error("رقم الهاتف غير متوفر");
-                            }
-                          }}
-                        >
-                          <Phone className="mr-2 h-5 w-5" />
-                          اتصال بالراكب
-                        </Button>
+                        <div className="mt-4 space-y-2">
+                          <Button 
+                            className="w-full"
+                            variant="outline"
+                            onClick={() => {
+                              if (rideDetails.rider?.phone) {
+                                window.location.href = `tel:${rideDetails.rider.phone}`;
+                              } else {
+                                toast.error("رقم الهاتف غير متوفر");
+                              }
+                            }}
+                          >
+                            <Phone className="ml-2 h-5 w-5" />
+                            اتصال بالراكب
+                          </Button>
+                          
+                          {showChatTab && (
+                            <Button 
+                              className="w-full"
+                              onClick={() => document.querySelector('[data-value="chat"]')?.dispatchEvent(new Event('click'))}
+                            >
+                              <MessageCircle className="ml-2 h-5 w-5" />
+                              محادثة مع الراكب
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </>
                   )}
@@ -661,7 +741,7 @@ const Ride = () => {
                     <div className="mt-4 w-full">
                       <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded-lg">
                         <h4 className="flex items-center font-medium mb-2">
-                          <Clock className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                          <Clock className="h-5 w-5 ml-2 text-blue-600 dark:text-blue-400" />
                           الرحلة قيد التنفيذ
                         </h4>
                         <p className="text-sm text-slate-600 dark:text-slate-400">

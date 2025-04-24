@@ -66,12 +66,17 @@ export async function signIn(email: string, password: string) {
 
 export async function signOut() {
   try {
+    // إصلاح مشكلة تسجيل الخروج بتأكد من استدعاء الدالة الصحيحة
     const { error } = await supabase.auth.signOut();
     
     if (error) {
+      console.error("خطأ في تسجيل الخروج:", error);
       toast.error(error.message);
       return { error };
     }
+    
+    // توجيه إضافي للصفحة الرئيسية بعد تسجيل الخروج للتأكد من تحديث الواجهة
+    window.location.href = "/";
     
     return { success: true };
   } catch (error) {
