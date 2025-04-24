@@ -17,44 +17,46 @@ import DashboardLayout from "./components/DashboardLayout";
 import { useEffect } from "react";
 import { getMapboxToken } from "./lib/mapService";
 
-// التحقق من وجود توكن Mapbox
-useEffect(() => {
-  const mapboxToken = getMapboxToken();
-  if (!mapboxToken) {
-    console.error("Mapbox token is missing. Maps will not work correctly.");
-  }
-}, []);
-
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              
-              {/* المسارات المحمية */}
-              <Route element={<AuthGuard />}>
-                <Route element={<DashboardLayout />}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/ride" element={<Ride />} />
-                  <Route path="/history" element={<History />} />
+const App = () => {
+  // التحقق من وجود توكن Mapbox
+  useEffect(() => {
+    const mapboxToken = getMapboxToken();
+    if (!mapboxToken) {
+      console.error("Mapbox token is missing. Maps will not work correctly.");
+    }
+  }, []);
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TooltipProvider>
+          <AuthProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                
+                {/* المسارات المحمية */}
+                <Route element={<AuthGuard />}>
+                  <Route element={<DashboardLayout />}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/ride" element={<Ride />} />
+                    <Route path="/history" element={<History />} />
+                  </Route>
                 </Route>
-              </Route>
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
